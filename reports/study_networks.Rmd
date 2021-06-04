@@ -24,7 +24,7 @@ options(warn = -1)
 
 # Load Data
 labkey.data <- labkey.selectRows(
-    baseUrl="https://dataspace.cavd.org", 
+    baseUrl=labkey.url.base,
     folderPath="/CAVD", 
     schemaName="CDS", 
     queryName="study", 
