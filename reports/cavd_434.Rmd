@@ -69,6 +69,7 @@ Lastly, we will load one additional R package that we will need to reproduce the
 
 ```{r load_cowplot, cache = FALSE}
 
+library(ggplot2)
 library(cowplot)
 
 ```
