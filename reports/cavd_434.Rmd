@@ -528,4 +528,3 @@ ggplot(plot_data,
             plot.margin = unit(c(5,5,-10,-10),"points"))
 
 ```
-<script>window.HTMLWidgets.staticRender();</script>

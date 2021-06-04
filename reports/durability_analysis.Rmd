@@ -45,6 +45,7 @@ There were two pieces of information I learned from performing step 6.
 
 library(png)
 library(grid)
+library(ggplot2)
 img <- readPNG("/labkey/labkey/files/CAVD/@files/report_files/cavd259_durability.png")
 grid.raster(img)
 
@@ -63,7 +64,7 @@ library(DataSpaceR)
 
 con <- connectDS()
 
-nyvac_data_connect = con$getGroup(218)
+nyvac_data_connect = con$getGroup(220)
 nyvac_data_demo = nyvac_data_connect$getDataset("Demographics")
 
 # create product label
@@ -111,7 +112,7 @@ nyvac_durability_bama_responders = nyvac_durability_bama_all %>%
         peak_responder = response_call[which.min(days_last_vacc)]
     ) %>%
     ##remove cases without peak response and there are not two measurements
-    filter(peak_responder == T & total_measurements >= 2)  
+    filter(peak_responder == T & total_measurements >= 2)
 
 
 antigen_set = nyvac_durability_bama_responders %>% group_by(antigen) %>%
@@ -127,7 +128,7 @@ ggplot(data = subset(nyvac_durability_bama_responders, antigen %in% antigen_set)
     scale_color_discrete("Study")+
     geom_line(aes(group = subjectid)) +
     theme_bw() +
-    theme(legend.position = "top") 
+    theme(legend.position = "top")
 
 ```
 
@@ -159,7 +160,7 @@ ggplot(data = subset(nyvac_durability_ics_responders, functional_marker_name == 
                   labels = c(expression("" <= 0.01),"0.1", "1","10","100","1000")) +
     facet_grid(nyvac_label~antigen) +
     scale_x_continuous("Study week after last vaccination") +
-    scale_color_manual("Study", values = c("##F8766D", "##00BFC4", "##C77CFF"))+ # for common colors
+    scale_color_manual("Study", values = c("#F8766D", "#00BFC4", "#C77CFF"))+ # for common colors
     geom_line(aes(group = subjectid)) +
     theme_bw() +
     theme(legend.position = "top") 
