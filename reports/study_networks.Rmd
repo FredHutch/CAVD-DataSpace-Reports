@@ -40,15 +40,18 @@ study_networks <- study[, .(network, data_availability, type, start_date, strate
 study_networks$start_year <- substr(study_networks$start_date, 1,4)
 study_networks$has_data <- !is.na(study_networks$data_availability)
 
+
+
 ```
 
 ```{r count_by_network}
-
+crPalette <- colorRampPalette(c("#9d9d9e", "#1590ea", "#f00f28"))
+palette <- crPalette(length(unique(study_networks$has_data)))
 
 master_plot_1 <- ggplot(study_networks, aes(x = network)) +
     geom_bar(aes(fill = has_data), width=.5, stat="count") +
     ggtitle("Number of Studies by Network and Data Availability") +
-    scale_fill_manual(values = c("#939598", "#41c49f"), 
+    scale_fill_manual(values = palette, 
                       labels = c("Data Not Yet Added",
                                  "Assay Data in DataSpace")) +
     theme(
@@ -69,9 +72,11 @@ master_plot_1 <- ggplot(study_networks, aes(x = network)) +
 
 ```{r study_type}
 # Get correct order 
+
 type_order <- setorder(study_networks[, .N, .(type)], N)
-# cbPalette<-c("#828282", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-palette <- c("#56B4E9", "#F0E442", "#CC79A7" )
+
+crPalette <- colorRampPalette(c("#f00f28", "#9d9d9e", "#1590ea"))
+palette <- crPalette(length(unique(study_networks$network)))
 
 master_plot_2 <- ggplot(study_networks, aes(x = type))+
     geom_bar(aes(fill = network), stat="count") + 
@@ -102,8 +107,6 @@ strategy_order <- setorder(study_networks[, .N, .(strategy)], N, na.last = TRUE)
 
 # Put na on bottom
 strategy_order <- strategy_order[-which(is.na(strategy))]
-
-
 
 palette <- c("#56B4E9", "#F0E442", "#CC79A7" )
 
