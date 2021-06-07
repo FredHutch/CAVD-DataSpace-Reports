@@ -1175,9 +1175,9 @@
                 if (d[0] == "MAb") mab = mrData.rawMabData.idMaps.mab[d[1]];
             });
             return(
-                mrData.webdav + 
-                    "/CAVD/%40files//report_files/mab_visualizations/neutralizationCurves/" +
-                    paletteName + "/" + mab + "/" + virus + ".png"
+                mrData.reportFiles + 
+                    "/neutralizationCurves" +
+                    "/" + paletteName + "/" + mab + "/" + virus + ".png"
             );
         };
 

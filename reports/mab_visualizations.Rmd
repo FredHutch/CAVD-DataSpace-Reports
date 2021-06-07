@@ -25,7 +25,7 @@ cat("<script>", appendDataObjects(mabDat), "</script>")
 
     (() => {
 
-        let reportsdir = `r paste0(webDir, depDir)`;
+        let reportsdir = "`r paste0(webDir, depDir)`";
 
         d3
             .select("head")

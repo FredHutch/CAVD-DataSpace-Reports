@@ -117,8 +117,8 @@
 
     this.mabReportData.webdav = "../../_webdav";
     
-    mrd.webdav = "../../_webdav/"; // should be location of _webdav relational to page on server
-    mrd.reportfiles = mrd.webdav + "CAVD/@files/CAVD-DataSpace-Reports"; // should be repo location on server
+    mrd.webdav = "../../_webdav"; // should be location of _webdav relational to page on server
+    mrd.reportFiles = mrd.webdav + "/CAVD/@files/CAVD-DataSpace-Reports"; // should be repo location on server
     mrd.dataStatus = ["complete"];
 
 })();

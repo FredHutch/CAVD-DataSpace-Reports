@@ -17,8 +17,8 @@
   <tbody id="mab-neut-grid-table">
   <tr id="mab-neut-grid-header1">
   <th rowspan="2" colspan="2" id="legend-cell" style="width: 260px;">
-  <img src="${this.mabReportData.reportfiles}/dependencies/mab_visualizations/images/ncg_scale.png"  style="right: 5px">
-  <img src="${this.mabReportData.reportfiles}/dependencies/mab_visualizations/images/ncg_legend.png" style="right: 140px;">
+  <img src="${this.mabReportData.reportFiles}/dependencies/mab_visualizations/images/ncg_scale.png"  style="right: 5px">
+  <img src="${this.mabReportData.reportFiles}/dependencies/mab_visualizations/images/ncg_legend.png" style="right: 140px;">
   </th>
   </tr>
   <tr id="mab-neut-grid-header2"></tr>
@@ -38,10 +38,10 @@
         
         const createImgTag = (virus, mab) => {
             //let path = "neutralizationCurves/"
-            let path = webdav + "/CAVD/%40files/neutralizationCurves/rainbow/";
-            if (virus === undefined) path = path + mabMap[mab] + "/all_viruses.png";
-            if (mab === undefined) path = path + "viruses/" + virMap[virus] + ".png";
-            if (!(mab === undefined || virus === undefined)) path = path + mabMap[mab] + "/" + virMap[virus] + ".png";
+            let path = this.mabReportData.reportFiles + "/neutralizationCurves/rainbow";
+            if (virus === undefined) path = path + "/" + mabMap[mab] + "/all_viruses.png";
+            if (mab === undefined) path = path + "/viruses/" + virMap[virus] + ".png";
+            if (!(mab === undefined || virus === undefined)) path = path + "/" + mabMap[mab] + "/" + virMap[virus] + ".png";
             const img = document.createElement("img");
             img.src = path;
             img.loading = "lazy";
