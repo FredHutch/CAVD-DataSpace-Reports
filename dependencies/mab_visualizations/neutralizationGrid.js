@@ -38,7 +38,7 @@
         
         const createImgTag = (virus, mab) => {
             //let path = "neutralizationCurves/"
-            let path = this.mabReportData.reportFiles + "/neutralizationCurves/rainbow";
+            let path = "../../_webdav/CAVD/@files/neutralizationCurves/rainbow";
             if (virus === undefined) path = path + "/" + mabMap[mab] + "/all_viruses.png";
             if (mab === undefined) path = path + "/viruses/" + virMap[virus] + ".png";
             if (!(mab === undefined || virus === undefined)) path = path + "/" + mabMap[mab] + "/" + virMap[virus] + ".png";

@@ -1175,7 +1175,7 @@
                 if (d[0] == "MAb") mab = mrData.rawMabData.idMaps.mab[d[1]];
             });
             return(
-                mrData.reportFiles + 
+                "../../_webdav/CAVD/@files/" + 
                     "/neutralizationCurves" +
                     "/" + paletteName + "/" + mab + "/" + virus + ".png"
             );
