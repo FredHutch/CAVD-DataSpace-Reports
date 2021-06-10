@@ -127,8 +127,7 @@ x <- lapply(c("rainbow", "gray"), function(paletteName) {
     logger("INFO", "plotting viruses vs all mabs")
 
     ## Viruses vs all mabs
-    r <- try({ dir\- <- file.path(plotsDir, paletteName, "viruses") }, silent = TRUE)
-    logger("INFO", )
+    r <- try({ dir <- file.path(plotsDir, paletteName, "viruses") }, silent = TRUE)
     if ("try-error" %in% class(r)) {
         stop(logger("ERROR", r))
         dev.off()
