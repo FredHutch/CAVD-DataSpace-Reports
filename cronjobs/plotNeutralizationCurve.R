@@ -1,21 +1,5 @@
 library(Rlabkey)
 library(data.table)
-# library(ggplot2)
-# labkey.url.base <- "https://dataspace.cavd.org/"
-# labkey.url.path <- "/CAVD/"
-#
-# nabmab <- data.table(labkey.selectRows(labkey.url.base,
-#                                        labkey.url.path,
-#                                        "Study",
-#                                        "NABMAb",
-#                                        colNameOpt = "fieldname"))
-# mabMixMeta <- data.table(labkey.selectRows(labkey.url.base,
-#                                            labkey.url.path,
-#                                            "CDS",
-#                                            "MAbMixMetadata",
-#                                            colNameOpt = "fieldname"))
-#
-# nabmab <- merge(nabmab, mabMixMeta)
 
 ### helpers and constants ###
 LINETYPES <- rep(c('solid', 'dashed', 'dotdash', 'longdash','twodash'), 1000)

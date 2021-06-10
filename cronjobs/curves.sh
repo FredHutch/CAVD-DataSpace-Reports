@@ -1,6 +1,6 @@
 SCRIPTPATH=/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/cronjobs/curves.R
 PLOTSDIR=/labkey/labkey/files/CAVD/@files/neutralizationCurves
-LOGFILE=/home/cdsweb/cronjobs/curves_log.log
+LOGFILE=/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/cronjobs/curves_log.log
 PLOTFUN=/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/cronjobs/plotNeutralizationCurve.R
 
 # Remove all existing plots
