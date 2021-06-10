@@ -1,8 +1,8 @@
 library(optparse)
 
 PLOTSDIR = "/labkey/labkey/files/CAVD/@files/neutralizationCurves"
-LOGFILE  = "/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/cronjobs/curves_log.log"
-PLOTFUN  = "/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/cronjobs/plotNeutralizationCurve.R"
+LOGFILE  = "/labkey/labkey/files/CAVD/@files/curves_log.log"
+PLOTFUN  = "/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/static_content/plot_neutralization_curve.R"
 
 # Remove all existing plots
 if(dir.exists(PLOTSDIR)){    
