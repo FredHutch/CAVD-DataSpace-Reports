@@ -4,14 +4,6 @@ PLOTSDIR = "/labkey/labkey/files/CAVD/@files/neutralizationCurves"
 LOGFILE  = "/labkey/labkey/files/CAVD/@files/curves_log.log"
 PLOTFUN  = "/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/static_content/plot_neutralization_curve.R"
 
-# Remove all existing plots
-if(dir.exists(PLOTSDIR)){    
-    ul <- unlink(PLOTSDIR, recursive = TRUE)
-    cat(ul, "\n")
-}
-
-dir.create(PLOTSDIR)
-
 ## ----- make option list ------
 opt <- list(
     "plotsdir" = PLOTSDIR,
@@ -19,20 +11,6 @@ opt <- list(
     "logfile" = LOGFILE,
     "labkeyurlbase" = labkey.url.base
     );
-
-## ----- verify arguments -----
-plotsDir <- file.path(opt$plotsdir)
-if (!dir.exists(plotsDir)) {
-    stop("could not find ", plotsDir)
-}
-
-if (!file.exists(opt$plotfuns)) {
-    stop("could not find plotfuns")
-}
-
-if (!file.exists(opt$logfile)) {
-    file.create(opt$logfile)
-}
 
 ## ----- define logger -----
 logger <- function(level, msg, ...) {
@@ -42,10 +20,37 @@ logger <- function(level, msg, ...) {
 
 ## -------------------------
 logger("INFO", "----- curves.R -----")
-logger("INFO", "plotsdir=", opt$plotsdir)
-logger("INFO", "plotfuns=", opt$plotfuns)
-logger("INFO", "logfile=", opt$logfile)
-logger("INFO", "labkeyurlbase", opt$labkeyurlbase)
+logger("INFO", "plotsdir =", opt$plotsdir)
+logger("INFO", "plotfuns =", opt$plotfuns)
+logger("INFO", "logfile =", opt$logfile)
+logger("INFO", "labkeyurlbase =", opt$labkeyurlbase)
+
+## ----- remove all existing plots -----
+if(dir.exists(PLOTSDIR)){    
+    ul <- unlink(PLOTSDIR, recursive = TRUE)
+    logger("INFO", sprintf("Plot directory exists, unlinking %s.", ifelse(ul, "unsuccessful", "successful")))
+} else {
+    logger("INFO", "Plot directory does not exist")
+}
+
+dir.create(PLOTSDIR)
+
+## ----- verify arguments -----
+plotsDir <- file.path(opt$plotsdir)
+
+if (!dir.exists(plotsDir)) {
+    logger("ERROR:", "could not find ", plotsDir)
+    stop("could not find ", plotsDir)
+}
+
+if (!file.exists(opt$plotfuns)) {
+    logger("ERROR:", "could not find plotfuns")
+    stop("could not find plotfuns")
+}
+
+if (!file.exists(opt$logfile)) {
+    file.create(opt$logfile)
+}
 
 ## ----- START -----
 suppressPackageStartupMessages({
@@ -62,22 +67,22 @@ r <- try({
     labkey.url.base <- opt$labkeyurlbase
     labkey.url.path <- "/CAVD"
     nabmab <- labkey.selectRows(
-        labkey.url.base,
-        labkey.url.path,
+        baseUrl    = labkey.url.base,
+        folderPath = labkey.url.path,
         schemaName = "study",
-        queryName = "NABMAb",
+        queryName  = "NABMAb",
         colNameOpt = "fieldname",
-        method = "GET"
+        method     = "GET"
     )
     virIds <- labkey.selectRows(
-        labkey.url.base,
-        labkey.url.path,
-        "CDS",
-        "nabantigen",
-        colSelect = c("virus", "cds_virus_id"),
-        colFilter = makeFilter(c("assay_identifier", "EQUAL", "NAB MAB")),
+        baseUrl    = labkey.url.base,
+        folderPath = labkey.url.path,
+        schemaName = "CDS",
+        queryName  = "nabantigen",
+        colSelect  = c("virus", "cds_virus_id"),
+        colFilter  = makeFilter(c("assay_identifier", "EQUAL", "NAB MAB")),
         colNameOpt = "fieldname",
-        method = "GET"
+        method     = "GET"
     )
     nabmab <- merge(nabmab, virIds)
     setDT(nabmab)
@@ -96,18 +101,18 @@ if (!file.exists(file.path(plotsDir, "axis.png"))) {
     }
 }
 
-x <- lapply(c("rainbow", "gray"), function(paletteName) {
-    logger("INFO", paste0("-- ", paletteName, " --"))
+for(paletteName in c("rainbow", "gray")) {
 
+    logger("INFO", paste0("-- ", paletteName, " --"))
     palette <- ifelse(paletteName == "rainbow", MELLOWPAL, GRAY)
-    
     logger("INFO", "plotting mabs vs all viruses")
 
     ## Mab vs all viruses
-    res_m <- lapply(mabs, function(mab) {
+    for(mab in mabs){
         te <- try({
             dir <- file.path(plotsDir, paletteName, mab)
-            if (!dir.exists(dir)) {dir.create(dir, recursive = TRUE); logger("INFO", "dir exists for", mab)}
+            dir.create(dir, recursive = TRUE)
+            ## if (!dir.exists(dir)) { dir.create(dir, recursive = TRUE); logger("INFO", "creating", palette,  "dir for", mab) }
             createNeutralizationThumbnail(
                 nabmab,
                 colorPalette = palette,
@@ -121,8 +126,7 @@ x <- lapply(c("rainbow", "gray"), function(paletteName) {
             dev.off()
             logger("WARNING", mab, "vs all viruses failed:", te)
         }
-        return(te)
-    })
+    }
 
     logger("INFO", "plotting viruses vs all mabs")
 
@@ -132,9 +136,11 @@ x <- lapply(c("rainbow", "gray"), function(paletteName) {
         stop(logger("ERROR", r))
         dev.off()
     }
-    res_v <- lapply(viruses, function(virus){
+
+    dir.create(dir, recursive = TRUE)
+    for(virus in viruses){
         te <- try({
-            if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+            ## if (!dir.exists(dir)){ dir.create(dir, recursive = TRUE); logger("INFO", "creating", palette, "dir for", virus) }
             createNeutralizationThumbnail(
                 nabmab,
                 colorPalette = palette,
@@ -148,18 +154,17 @@ x <- lapply(c("rainbow", "gray"), function(paletteName) {
             dev.off()
             logger("WARNING", virus, "vs all mabs failed:", te)
         }
-        return(c)
-    })
+    }
 
     logger("INFO", "plotting all combinations of mab vs virus")
 
-    ## Individaul
+    ## Individual
     res_i <- apply(unique(nabmab[mab_mix_id %in% mabs, .(cds_virus_id, mab_mix_id)]), 1,  function(x) {
         c <- try({
             virus <- x[1]
             mab <- x[2]
             dir <- file.path(plotsDir, paletteName, mab)
-            if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+            ## if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
             createNeutralizationThumbnail(
                 nabmab,
                 virus,
@@ -184,6 +189,6 @@ x <- lapply(c("rainbow", "gray"), function(paletteName) {
         stop(logger("ERROR", r))
         dev.off()
     }
-})
+}
 
 logger("INFO", "Finished curves.R\n")
