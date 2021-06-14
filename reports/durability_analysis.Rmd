@@ -1,0 +1,204 @@
+---
+output: html_document_base
+---
+
+```{r set-options, include=FALSE}
+
+knitr::opts_chunk$set(cache = TRUE,
+                      cache.path = paste0(labkey.file.root, 
+                                          "/cache/nyvac_report/",
+                                          labkey.user.email,
+                                          "/"),
+                      warning = FALSE,
+                      message = FALSE,
+                      highlight = TRUE,
+                      tidy = TRUE,
+                      fig.align = "center",
+                      fig.width = 8)
+
+```
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+
+
+# Background
+
+To aid in the design of a challenge study using NYVAC, we used DataSpace to assess the durability of similar products to better inform challenge timing. Using previous NYVAC studies, our goal is to determine a timeline so that challenges can be given while responses are still detectable. For this post, we explored immune responses measured using [BAMA](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Assay/BAMA), [ICS](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Assay/ICS), and [TZM-bl Neutralization Assay](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Assay/NAB). 
+
+# Preliminary analysis using DataSpace
+
+For this analysis, we explored the data first using the DataSpace web tool and utilized several useful features of the app before finalizing the results with R. We proceeded as follows:
+
+1.  First, we wanted to filter studies using the relevant vaccine products, [NYVAC-C](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study%20Product/4?q=nyvac-c) and [NYVAC-KC](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study%20Product/155?q=nyvac-kc).  In **Active filters** on the lower right hand panel, I clicked on **Products**, de-selected all of the products by unchecking "All", then scrolled down and selected these two NYVAC products, then clicked **Filter**.    
+2. Next, in **Active filters**, I selected **Species** and selected "Rhesus macaques" as we are designing a non-human primate (NHP) challenge study. There were 5 CAVD studies available matching these filters: [259](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd259?q=259), [277](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd277?q=277), [281](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd281?q=281), [408](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd408?q=408), and [434](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd434?q=434). Now, we can save the filters (**Save** option next to **Active filters** in the right panel) and this data set would be available for access using the DataSpaceR API (`con$availableGroups`). However, we’re going wait to create the saved group until we’ve done a bit more investigation.  The next steps utilize additional features of DataSpace that helped with the analysis.
+3. We can use DataSpace to actually curate some of the data for a more succinct data set.  This was done by clicking on **View Data Grid**. To start, there are only a few default fields displayed. As we were going to work with BAMA data, we can add those results as follows: click on **Select columns**, then under **Assays** click on "BAMA (Binding Ab multiplex assay)", and then select the recommended columns plus the Area under the titration curve (AUTC) variable. Click **Done** and the additional columns should be added to the data grid. This can be repeated for ICS and NAb data.
+4. Next, since this is a durability analysis, we want to make sure that we are focusing on durability time points (measurements more than 2 weeks post final vaccination). For cross-study analysis, this can be an arduous task, but DataSpace makes this easy by providing a time variable relative to the last vaccination. Under **Select columns**, we can click on "Time points" and then select study times (days, weeks, or months) relative to the last vaccination. After selecting these, click **Done** and the data set is now complete.
+5. Now we save the ‘group’, NYVAC durability comparison, with the **Save** option next to **Active filters**, making the data set available for access using the [DataSpaceR API](https://github.com/FredHutch/DataSpaceR) (`con$availableGroups`). The data set can also be exported directly by clicking **export** at the top left.
+6. The last step I performed was to plot the data using DataSpace. This can be done using **Plot Data** (upper right) and then selecting the axes: I selected BAMA AUTC on the log scale for the y-axis and Time Points in study days after last vaccination for the x-axis. I then colored by Study.
+
+There were two pieces of information I learned from performing step 6. 
+
+- CAVD 259 has study time points that could qualify as durability time points: measurements more than 2 weeks after a vaccination but between 100 and 0 days *before* the final vaccination time points (see screenshot below).
+- There were no durability time points for CAVD 408.
+
+```{r fig.width=6, fig.height=2, echo=FALSE}
+
+library(png)
+library(grid)
+img <- readPNG("/labkey/labkey/files/CAVD/@files/report_files/cavd259_durability.png")
+grid.raster(img)
+
+```
+
+For CAVD 259, those additional time points are useful for this analysis even though they technically occur before the final vaccination. Despite being visually evident using DataSpace, these points might have been removed had I gone straight to R after step 2 above and filtered according to the final vaccination time point. Based on what I learned using the plot tool, I filtered out 408 and I made a note that I would need to carefully denote those additional results from 259 as durability time points for the analysis.
+
+# Results
+
+The final steps for the analysis involved loading the data in R and creating figures specific to the request ([See our case study report on CAVD 434](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A18) for a detailed explanation for how to use the DataSpaceR API). For BAMA, we focused on antigens where there were responses in at least 3 of the four studies following the final vaccination time point (Figure \ref{bama}). For all of these antigens, there is still detectable response at least 8 weeks out for either NYVAC product among vaccine responders. For ICS, we looked at durability of IFN$\gamma$, IL2, or TNF$\alpha$ secreting CD4+ T-cell responses and found generally durable responses through week 8 for both products among responders; however, there were generally less responders for this assay (Figure \ref{ICS}). Lastly, neutralizing antibody responses were less consistent (Figure \ref{nab}. For animals receiving NYVAC-C vaccine, there were generally lower overall response rates and they usually decayed. For animals receiving NYVAC-KC, there were more responses and they tended to be more durable in CAVD 434, particularly against MW965.26.
+
+```{r load data}
+
+library(dplyr)
+library(DataSpaceR)
+
+con <- connectDS()
+
+nyvac_data_connect = con$getGroup(218)
+nyvac_data_demo = nyvac_data_connect$getDataset("Demographics")
+
+# create product label
+nyvac_data_demo$nyvac_label = with(nyvac_data_demo, ifelse(grepl("NYVAC-C", study_product_combination), "NYVAC-C", "NYVAC-KC"))
+
+```
+
+```{r data processing functions}
+
+clean_headers = function(names_in){
+    sub("\\.", "_", gsub("\\.+$", "", gsub("\\.+", 
+                                           "\\_", tolower(make.names(trimws(names_in, "both"))))))
+}
+
+## this function pulls the data by assay, merges on the demographics data
+## and does some standard processing for durability time points
+clean_data_fun = function(assay){
+    
+    data_raw = nyvac_data_connect$getDataset(assay) %>% 
+        left_join(nyvac_data_demo, by = c("SubjectId")) %>%
+        filter(!(study_label == "CAVD 259" & visit_day == 357)) ## a boost time point with no durability
+    
+    ## clean headers
+    names(data_raw) = clean_headers(names(data_raw))
+    
+    ##handling 257 data, day 224 is second to last vaccination with qualifying durability time points
+    data_raw$study_last_vaccination_day = with(data_raw, ifelse(study_label == "CAVD 259", 224, study_last_vaccination_day)) 
+    
+    data_raw$days_last_vacc = with(data_raw, visit_day - study_last_vaccination_day)
+
+    subset(data_raw, days_last_vacc > 0)
+}
+
+```
+
+```{r bama analysis, fig.width = 8.5, fig.cap="Spaghetti plots for area under the titration curve (AUTC) trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for tested antigens with detected responses in CAVD 259, 277, 281, and 434. \\label{bama}", tidy = FALSE}
+
+nyvac_durability_bama_all = clean_data_fun("BAMA") %>% subset(antibody_isotype == "IgG")
+
+## create BAMA durability data, picking two antigens
+nyvac_durability_bama_responders = nyvac_durability_bama_all %>%
+    group_by(antigen, subjectid) %>%
+    mutate(
+        total_measurements = n_distinct(days_last_vacc),
+        peak_responder = response_call[which.min(days_last_vacc)]
+    ) %>%
+    ##remove cases without peak response and there are not two measurements
+    filter(peak_responder == T & total_measurements >= 2)  
+
+
+antigen_set = nyvac_durability_bama_responders %>% group_by(antigen) %>%
+    summarize(total_studies = n_distinct(study_label)) %>%
+    filter(total_studies >= 3) %>% `$`(antigen)
+
+ggplot(data = subset(nyvac_durability_bama_responders, antigen %in% antigen_set),
+       aes(x = days_last_vacc/7, y = auc, color = study_label)) +
+    geom_point() +
+    scale_y_log10("AUTC", limits = c(100, 32000)) +
+    facet_grid(nyvac_label~antigen) +
+    scale_x_continuous("Study week after last vaccination") +
+    scale_color_discrete("Study")+
+    geom_line(aes(group = subjectid)) +
+    theme_bw() +
+    theme(legend.position = "top") 
+
+```
+
+```{r ics analysis, fig.cap="Spaghetti plots for IFN$\\gamma$, IL2, or TNF$\\alpha$ secreting CD4+ T cell response trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for tested antigens with detected responses in CAVD 259, 281, and 434 (there was no available durability ICS data for CAVD 277). \\label{ICS}", tidy = FALSE}
+
+nyvac_durability_ics_all = clean_data_fun("ICS") %>% subset(summary_level %in% c('Protein','Protein Panel') & 
+                                                            antigen != 'Any Negative control' &
+                                                            cell_type == "CD4+")
+
+nyvac_durability_ics_responders = nyvac_durability_ics_all %>%
+    group_by(antigen, subjectid) %>%
+    mutate(
+        total_measurements = n_distinct(days_last_vacc),
+        peak_responder = response_call[which.min(days_last_vacc)]
+    ) %>%
+    ## remove cases without peak response and there are not two measurements
+    filter(peak_responder == T & total_measurements >= 2)  
+
+yaxis_label = expression(paste("Background-Subtracted % Cytokine Secreting " ~ CD4 ^ {"+"} ~ "T cells"))
+
+## red: ##F8766D   l. green: ##7CAE00   blue: ##00BFC4   purple ##C77CFF
+
+ggplot(data = subset(nyvac_durability_ics_responders, functional_marker_name == 'IFNg or IL2 or TNFa' &
+                                                      antigen %in% c("Any ENV", "Any GAG")),
+       aes(x = days_last_vacc/7, y = pmax(pctpos_adj, .01), color = study_label)) +
+    geom_point() +
+    scale_y_log10(yaxis_label,
+                  breaks = c(.01,.1,1,10,100,1000), 
+                  labels = c(expression("" <= 0.01),"0.1", "1","10","100","1000")) +
+    facet_grid(nyvac_label~antigen) +
+    scale_x_continuous("Study week after last vaccination") +
+    scale_color_manual("Study", values = c("##F8766D", "##00BFC4", "##C77CFF"))+ # for common colors
+    geom_line(aes(group = subjectid)) +
+    theme_bw() +
+    theme(legend.position = "top") 
+
+
+```
+
+
+```{r nab analysis, fig.cap = "Spaghetti plots for neutralization ID50 titer trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for MN.3, MW965.26, and TH023.6 viruses with detected responses in CAVD 259, 277, 281, and 434. Response titers below 20 are below the limit of detection. Responses against TH023.6 were not tested for NYVAC-C products. \\label{nab}", tidy = FALSE}
+
+nyvac_durability_nab_all = clean_data_fun("NAb") %>% subset(target_cell == "TZM-bl") %>%
+    mutate(
+        titer_plot = if_else(titer_id50<=20, 20, titer_id50)
+    )
+
+nyvac_durability_nab_responders = nyvac_durability_nab_all %>%
+    group_by(antigen, subjectid) %>%
+    mutate(
+        total_measurements = n_distinct(days_last_vacc),
+        peak_responder = response_call[which.min(days_last_vacc)]
+    ) %>%
+    ## remove cases without peak response and there are not two measurements
+    filter(peak_responder == T & total_measurements >= 2)  
+
+isolate_set = nyvac_durability_nab_responders %>% group_by(antigen) %>%
+    summarize(total_studies = n_distinct(study_label)) %>%
+    filter(total_studies >= 2) %>% `$`(antigen)
+
+ggplot(data = subset(nyvac_durability_nab_responders, antigen %in% isolate_set),
+       aes(x = days_last_vacc/7, y = titer_plot, color = study_label)) +
+    geom_point() +
+    scale_y_log10("ID50 neutralization titer", limits = c(10, 45000), 
+                  breaks = c(20, 100, 1000, 10000),
+                  labels = c(expression(""<=20), 100, 1000, 10000)) +
+    facet_grid(nyvac_label~antigen) +
+    scale_x_continuous("Study week after last vaccination") +
+    scale_color_discrete("Study")+
+    geom_line(aes(group = subjectid)) +
+    theme_bw() +
+    theme(legend.position = "top") 
+
+```

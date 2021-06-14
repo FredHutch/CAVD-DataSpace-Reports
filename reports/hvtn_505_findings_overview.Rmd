@@ -1,0 +1,220 @@
+---
+title: "HVTN 505 Analysis"
+output: "html_document"
+---
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport_condensed.css">
+
+```{r set-options, include=FALSE}
+
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  highlight = TRUE,
+  tidy = TRUE,
+  fig.align = "center",
+  fig.width = 10)
+ 
+```
+
+```{r load_packages, include=FALSE}
+
+library(dplyr)
+library(DataSpaceR)
+library(data.table)
+library(ggplot2)
+
+```
+
+# HVTN 505 Findings Overview
+
+```{r load_missing_data, include=FALSE}
+
+bhvriskTab <- data.table(pub_id = c(867,151,1656,738,840,1474,317,2402,1002,535,1264,373,85,71,1318,1270,56,2483,1982,1589,1757,873,1081,1776,986,947,2138,1962,1062,721,1495,1275,78,491,1958,695,2336,806,256,2128,1179,204,1497,2215,1737,1349,1203,599,1614,92,832,1779,1051,2021,3,172,1845,888,1713,592,2227,11,1321,1174,1098,86,1198,1190,2123,1746,1292,65,160,2014,821,1716,1152,1793,19,1289,1587,2398,2096,1820,676,1119,327,94,192,554,520,1899,2434,467,1968,416,212,1481,60,1392,997,1854,428,2420,1786,199,102,1181,1677,2193,505,927,722,1230,588,422,962,828,1143,1937,1994,1061,93,234,635,816,926,217,1931,2217,2178,162,532,723,1144,1231,920,1725,1630,1569,1278,1919,1083,2389,2500,128,1900,188,1531,2499,628,2157,989,12,1227,774,1730,786,1309,716,1599,8,1413,1763,390,1913,458,713,724,1281,1422,1165,2358,1063,33,320,154,144,1576,247,2474,2243,2501,1404,1709,2272,122,1993,1276,1370,2109,829,396,907,2257,1477,1783,228,1097,1877,1561,420,372,2114,280,933,772,1652,1361,239,1795,443,896,1948,1675,998,332,2153,1012,90,1168,447,2040,358,645,590,966,1037,1295,2407,1949,1371,751,432,379,206,1358,1226),
+                         bhvrisk = c(0,0.54,0.46,0,1,0.54,0.46,0.46,0,0,0.46,1,1,1,1,0.46,0,0.54,0.54,0.54,0.54,0.46,0.46,0.46,0.46,0,0.54,0.54,0,1,1,1,0,1,0,0.54,0.46,0.54,0.46,1,1,0.46,0.46,0,1,0,0.46,0.54,0.54,0.54,0.54,0.54,0,0.46,0.54,0.54,0,0.46,0.46,0.54,1,1,0.54,0.54,1,0.46,0.46,0,0.46,0.46,0.54,0,0.46,1,1,0,0.54,0.46,1,0,1,0.54,0,0,1,1,0,0,0.54,1,0,0.54,0.46,0.54,0,1,1,0,0.54,0,1,0.46,0,0,1,0,0.46,1,1,1,0.46,0,0,0,1,0.46,0.46,0.46,0.54,1,0,0,0.46,0,0,0,0.46,0.54,0,0.46,0.54,0.54,0.54,0,0.46,0.46,0,1,0.46,1,0.54,0.46,0.54,0,0,0.54,0,1,0.54,1,0.46,0.54,0.46,0.46,0,0,0.54,0,0,0,0.54,0,0.46,0,1,1,0.46,1,1,0.46,0,0,0,1,1,0,0.46,1,0.46,0,1,0,1,0.54,0.46,1,0.46,0.46,0.46,0,1,0,0.46,0,0,1,0,0,0.46,0.54,1,0,0,1,0,1,0.54,1,0,0,0.46,1,0.54,0.46,0,0,0.46,0,1,1,1,0,0,0,1,0.46,0.54,0,1,0,1,1,0,0,0,0,0,0))
+
+bhvriskTab[,pub_id:=paste("vtn505", sprintf("%04d", pub_id))]
+
+```
+
+```{r eval = F, include = F}
+
+## *DEVIATION NOTES*
+
+## * Add 'env' rows for IgG from 'Con 6 gp120/B' where IgG see HVTN505dataDocumentationTcells...docx on Atlas.
+## * Add 'env' rows for IgA from 'VRC B gp140' where IgA see HVTN505dataDocumentationTcells...docx on Atlas.
+## * Replaced all NA in bama pivot with 0.
+
+```
+
+There are 5 datasets available in DataSpace for HVTN505.
+
+```{r retrieve_data, echo = F}
+
+## retrieve data from dataspace
+con <- connectDS(onStaging = T)
+vtn505 <- con$getStudy("vtn505")
+
+knitr::kable(vtn505$availableDatasets, format="html")
+
+```
+
+```{r process_dataspace, include=F}
+
+ics505 <- vtn505$getDataset("ICS")
+bam505 <- vtn505$getDataset("BAMA")
+dem505 <- vtn505$getDataset("Demographics")
+
+## set names
+setnames(ics505, "ParticipantId", "pub_id")
+setnames(bam505, "ParticipantId", "pub_id")
+setnames(dem505, "ParticipantId", "pub_id")
+
+## pivot results for bama and ics
+icsPfs <- ics505[, pivotVal:=paste(gsub("\\+",  "", cell_type),
+                                   tolower(gsub("Any ", "", protein)),
+                                   "PFS",
+                                   sep = "_")]
+
+icsPfs <- unique(icsPfs[!is.na(polyfunctionality_score), .(pub_id, pivotVal, polyfunctionality_score)])
+icsPfs <- dcast(icsPfs, pub_id~pivotVal, value.var = "polyfunctionality_score")
+
+bamAnt <- bam505[, pivotVal:=paste(antibody_isotype,
+                                   gsub(" ", "", antigen),
+                                   sep = "_")]
+
+bamAnt <- unique(bamAnt[, .(pub_id, pivotVal, mfi_delta)])
+bamAnt[,mfi_delta:=log(mfi_delta)]
+bamAnt <- dcast(bamAnt, pub_id~pivotVal, value.var = "mfi_delta")
+
+## process demographics data to match names and values used in original analysis
+dem505[,`:=`(study_randomization = ifelse(study_randomization == "Placebo/Control", 0, 1),
+             studycohort = ifelse(studycohort == "pilot", NA,
+                           ifelse(studycohort == "case",  1, 0)),
+             sexatbirth = gsub("M", "m", sexatbirth))]
+
+dem505 <- merge(dem505, bhvriskTab, by = "pub_id")
+
+demNamMap <- c("trt"      = "study_randomization",
+               "case"     = "studycohort",
+               "age"      = "age_enrollment",
+               "gender"   = "sexatbirth",
+               "racefull" = "race",
+               "BMI"      = "bmi_enrollment",
+               "BMIcat"   = "bmi_category")
+
+dem505[,race:=as.factor(dem505$race)]
+dem505 <- dem505[!is.na(studycohort),]
+setnames(dem505, demNamMap, names(demNamMap))
+
+```
+
+We will use the `BAMA`, `ICS`, and `Demographics` datasets.
+
+```{r define_dataset, include=F}
+
+## combine the data sources, standardize demographic data
+analysisdata <- dem505 %>%
+    filter(trt == 1) %>%
+    select(pub_id, trt, case,
+           age, gender, racefull,
+           BMI, BMIcat, bhvrisk) %>%
+    inner_join(bamAnt, by = "pub_id") %>%
+    inner_join(icsPfs, by = "pub_id") %>%
+    mutate(age_std = scale(age),
+           bmi_std = scale(BMI),
+           bhvrisk_std = scale(bhvrisk))
+
+## subset to white or Black or African American
+analysisdata <- analysisdata[analysisdata$racefull %in% c('Black or African American', 'White'),]
+
+## rm na values from table for IgG_env and CD8+_PFS
+analysisdata <- analysisdata[!is.na(analysisdata$CD8_env_PFS) &
+                             !is.na(analysisdata$IgG_C.con.env03140CF_avi),]
+
+```
+
+```{r plot_relationship, echo = F}
+
+ggplot(data = analysisdata) +
+    geom_point(aes(exp(IgG_C.con.env03140CF_avi), CD8_env_PFS)) +
+    scale_x_log10() + 
+    xlab("IgG_C.con.env03140CF_avi") +
+    labs(title = "Relationship between IgG_C.con.env03140CF_avi and CD8_env_PFS")
+
+```
+
+```{r notes1, eval = F, include = F}
+
+## *DEVIATION NOTES*
+
+
+## * There are NA values in my CD8_env_PFS subseting table to exclude those records.
+## * Nowhere near as many bama antigens used
+## * BAMA parameter is not the same as used in original analysis, it's a different value than `mfi_blank`, log transforming `mfi_blank`
+
+```
+
+## Logistic regressions
+
+Logistic regression was performed using a generalized linear model for significance testing. Notes about each test and their results are found below.
+
+### Logistic regression on CD8 ENV polyfunctionality
+
+* Odds ratio is `exp(<estimate>)`, in this case `exp(-1.220)` = 0.295
+* p-value for CD8 env is 0.0005
+
+```{r logit1}
+
+fit_cd8env <- glm(case ~ age_std + bmi_std + bhvrisk_std +
+                      racefull + scale(CD8_env_PFS),
+                  family = binomial(link = 'logit'),
+                  data = analysisdata)
+
+knitr::kable(coef(summary(fit_cd8env)))
+
+```
+
+### Logistic regression for the single best antigen from BAMA.
+
+* Odds ratio is 0.587
+* p-value is 0.014
+
+```{r logit5}
+
+fit_bestsingle <- glm(case ~ age_std + bmi_std + bhvrisk_std + racefull +
+                          scale(IgG_C.con.env03140CF_avi),
+                      family = binomial(link = 'logit'),
+                      data = analysisdata)
+
+knitr::kable(coef(summary(fit_bestsingle)))
+
+```
+
+### Logistic regression including both CD8 ENV polyfunctionality and best single BAMA antigens well as an interaction term.
+
+* CD8 ENV polyfunctionality is significant.
+
+```{r logit4}
+
+fit_cross <- glm(case ~ age_std + bmi_std + bhvrisk_std + racefull +
+                     scale(IgG_C.con.env03140CF_avi) * scale(CD8_env_PFS),
+                family = binomial(link = 'logit'),
+                data = analysisdata)
+
+knitr::kable(coef(summary(fit_cross)))
+
+```
+
+### Logistic regression including both CD8 ENV polyfunctionality and best single BAMA antigen.
+
+```{r logit6}
+
+fit_bestsingle_cd8env <- glm(case ~ age_std + bmi_std + bhvrisk_std + racefull + 
+                                 scale(IgG_C.con.env03140CF_avi) + scale(CD8_env_PFS),
+                             family = binomial(link = 'logit'),
+                             data = analysisdata)
+
+knitr::kable(coef(summary(fit_bestsingle_cd8env)))
+
+```

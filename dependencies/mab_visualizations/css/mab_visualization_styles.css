@@ -1,0 +1,606 @@
+/* shared report styles  */
+
+/* ---------- */
+
+/* select_head */
+
+/* select_cont */
+/* -> select_label     select_icon  */
+
+/* ---------- */
+.reportViewMAb {
+    padding: 0px 20px;
+    background-color: initial;
+    min-height: 200px;
+    overflow: auto;
+}
+
+.mabreporttabs {
+    display: inline-block;
+    right: auto;
+    left: 0px;
+    margin: 10px 0px;
+    width: 100%;
+    top: 0px;
+    white-space: nowrap;
+}
+
+.mabreporttab {
+    border-bottom: 1px solid #e1e1e1;
+    line-height: 40px;
+    height: 40px;
+    width: 25%;
+    display: inline-block;
+    right: auto;
+    left: 0px;
+    margin: 0px;
+    top: 0px;
+    color: #888;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.mabreporttab.active {
+    border-color: #dc2850;
+    color: #000;
+}
+
+.mabreportconts{
+    width: 100%;
+    height: calc(100% - 65px);
+}
+
+.mabreportcont {
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    display: block;
+}
+
+#mabreportrenderpanel {
+    margin:0;
+    padding:0;
+    height: 100%;
+}
+
+.labkey-knitr {
+    height: 100%
+}
+
+.mr_select_head {
+    padding: 20px 20px 5px 5px;
+    color: #111;
+    font-weight: bold;
+}
+
+.mr_select_container {
+    background-color: #fff;
+    margin: 10px 0px 0px 0px;
+    padding: 8px 8px 8px 8px;
+    border: 1px solid #bebebe;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.mr_select_label {
+    padding: 0px 10px 0px 10px;
+    font-weight: bold;
+    float:left;
+}
+
+.mr_select_icon {
+    width: 16px;
+    height: 16px;
+    float: right;
+    background-image: url(../images/dropdown_normal.svg);
+    background-size: 16px;
+    background-repeat: no-repeat;
+}
+
+.mr_select_icon:hover {
+    background-image: url(../images/dropdown_hover.svg);
+}
+
+.mr_dropdown {
+    position: relative;
+    display: inline-block; 
+    cursor: pointer;
+    width: 100%;
+}
+
+.mr_dropdown_content {
+    top: -15px;
+    position: absolute;
+    background-color: #fff;
+    margin: 0px;
+    padding: 8px;
+    border: 1px solid #bebebe;
+    border-radius: 2px;
+    border-top-width: 0px;
+    cursor: pointer;
+    z-index: 1;
+    overflow-y: scroll;
+    cursor: pointer;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.mr_dropdown_content_text {
+    color: black;
+    padding: 8px 8px;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+}
+
+/* neutralization curves styles */
+
+.nc_plots {
+    padding: 0;
+    margin: 0; 
+    display: grid;
+    grid-template-columns: [margin-start] max(10%, 30px) [plots-start] 1fr [plots-end] max(10%, 30px) [margin-end];
+    grid-template-rows: [plots-start] 100% [plots-end];
+    background-color: white;
+    height: 100%;
+    width: 100%;
+}
+
+.nc_container {
+    grid-area: plots;
+    display: grid;
+    grid-template-columns: [table-start legend-start legendhead-start select-start] max-content [legend-end legendhead-start select-end plot-start] 1fr [plot-end table-end];
+    grid-template-rows: [select-start plot-start] 100px [select-end legendhead-start] 30px [legendhead-end legend-start] 350px [legend-end plot-end table-start] minmax(200px, 1fr) [table-end];
+    height: 100%;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.nc_head {
+    grid-area: select;
+    background-color: white;
+    cursor: pointer;
+}
+
+.nc_plot {
+    grid-area: plot;
+}
+
+.nc_dropdown {
+    max-height: 350px;
+}
+
+.nc_legend_head {
+    padding: 5px 20px 5px 5px;
+    grid-area: legendhead;
+    background-color: white;
+    color: #111;;
+    font-weight: bold;
+}
+
+.nc_legend {
+    grid-area: legend;
+    margin: 0px 5px 0px 0px;
+    padding:0px 20px 0px 5px;
+    overflow-y: auto;
+    background-color: white;
+    border-bottom-width: 20px;
+    border-bottom-style: solid;
+    border-color: white;
+}
+
+.nc_table {
+    overflow-x: auto;
+    overflow-y: auto;
+    grid-area: table;
+    margin-top: 10px;
+}
+
+.nc_table table {
+    width: 100%;
+}
+
+.nc_table tr {
+    padding: 10px;
+}
+
+.nc_table>table {
+    font-family: Arial, serif;
+    font-size: 12px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0px;
+    color:#666363;
+}
+
+.nc_table thead, .nc_table th {
+    color: #E4E4E4;
+    padding: 0;
+    margin: 0;
+    vertical-align: middle;
+    height: 56px;
+    margin-bottom: 1em;
+    border-bottom: 2px solid #666363 !important;
+}
+
+.nc_table th {
+    position: sticky;
+    top: 0px
+}
+
+.nc_table td {
+    white-space: nowrap;
+}
+
+.nc_table th, .nc_table td {
+    vertical-align: top;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ddd !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.nc_table th {
+    color:#666363;
+    background-color: white;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 10px;
+}
+
+.nc_table td {
+    padding: 1.5em 1em; 
+}
+
+.nc_table tr:hover td {
+    background-color: #fff;
+}
+
+.nc_legend_item {
+    cursor: pointer;
+}
+
+.ncPlotArea>.nc_line {
+    cursor: pointer;
+}
+
+/* neutralization curve grid */
+
+#mab-neut-grid {
+  overflow: scroll;
+  height: 100%;
+  width: 100%;
+  background: white;
+}
+
+#mab-neut-grid td img {
+    padding-left: 3px;
+    height: 60px;
+}
+
+#mab-neut-grid table {
+  border-collapse: collapse;
+  background: white;
+}
+#legend-cell {
+  z-index: 100001;
+  top: 0px;
+  left: 0px;
+  position: sticky;
+  background: white;
+  width: 255px;
+}
+
+#legend-cell img {
+  bottom: 5px;
+  position: absolute;
+}
+
+#mab-neut-grid-table tr {
+  padding: 0;
+  margin: 0;
+}
+
+#mab-neut-grid-header1 > td {
+  position: sticky;
+  white-space: nowrap;
+  background: white;
+  border:white;
+  top: 0px;
+  height: 150px;
+  z-index: 100
+}
+
+#mab-neut-grid-header1 > td > div {
+  transform: translate(20px, 40px) rotate(315deg);
+  width: 60px;
+  z-index: 110;
+}
+
+#mab-neut-grid-header2 td {
+  z-index: 100;
+  position: sticky;
+  top: 150px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e2e2e2;
+  background-color: white;
+  padding-left: 2px;
+}
+
+.table-img {
+  width: 60px;
+  height: 60px;
+  padding: 2px;
+}
+
+.table-img-empty {
+  background-color: #f5f5f5;
+  height: 100%;
+  margin: 5px;
+}
+.mab-neut-grid-virus-header1 {
+  position: sticky;
+  left: 0px;
+  text-align: right;
+  background: white;
+  padding-right: 5px;
+  z-index: 0;
+  min-width: 175px;
+}
+
+.mab-neut-grid-virus-header2 {
+  position: sticky;
+  background: white;
+  z-index: 0;
+  padding-right: 20px;
+  width: 60px;
+}
+
+.mab-neut-grid-intesect {
+    width: 60px;
+    heigh: 60px;
+}
+
+.mab-neut-grid-cap-screen {
+    left: 10%;
+    top: 5%;
+    font-size: 14pt;
+    font-family: Georgia,serif;
+    position: relative;
+    width: 400px;
+}
+
+/* magnitude breath curves */
+
+#mb_plot {
+    height: 100%;
+}
+
+#mb_plot_grid {
+    display: grid;
+    grid-template-columns: [margin-start] max(30px, 10%) [mab-head-start mab-start vir-head-start vir-start ] min-content [mab-head-end mab-end vir-head-end vir-end plot-start] 1fr [plot-end] max(30px, 10%) [margin-end] ;
+    grid-template-rows: [plot-start mab-head-start] 100px [mab-head-end mab-start] min-content [mab-end vir-head-start] 30px [vir-head-end vir-start] 1fr [vir-end plot-end];
+    padding: 0px 0px 15px 0px;
+    margin: 0;
+    height: 100%;
+    background: white;
+}
+
+.mb_container {
+    height: 100%;
+}
+
+.mb_dropdown {
+    max-height: 350px;
+}
+
+#mb_plot_area {
+    grid-area: plot;
+}
+
+.mb_head {
+    grid-area: mab-head;
+    white-space: nowrap;
+    height: 100%;
+    width: 100%;    
+}
+
+.mb_dropdown_mabs {
+    overflow-y: auto;    
+    padding-bottom: 20px;
+    margin: 0px;
+    cursor: pointer;
+}
+
+.mb_dropdown_content {
+    grid-area: mab-head;
+}
+
+.mb_legend_mab_grp {
+    grid-area: mab;
+    padding: 0px 0px 10px 0px;
+    cursor: pointer;
+    max-height: 400px;
+    overflow: auto;
+}
+
+.mb_legend_vir_head {
+    grid-area: vir-head;
+    padding: 5px 20px 5px 5px;
+    background-color: white;
+    color: #111;;
+    font-weight: bold;
+}
+
+.mb_legend_virs {
+    overflow-y: auto;
+    grid-area: vir;
+    height: 100%;
+    border-bottom: 20px solid white;
+    padding: 0px 0px 0px 10px;
+}
+
+#mb_mab_legend_body>text {
+    cursor: pointer;
+    dominant-baseline: hanging;
+}
+
+#mb_vir_legend_body>text {
+    cursor: pointer;
+    dominant-baseline: hanging;
+}
+
+/* heatmap style */
+
+#hm_report {
+    display: grid;
+    width: 100%;
+    height: max(100%, calc(10% + 610px));
+    grid-template-columns: [hm-margin-start] max(30px, 10%) [hm-menu-start] 200px [hm-menu-end hm-plot-start] calc(calc(100% - 20%) - 200px) [hm-plot-end] max(30px, 10%) [hm-margin-end];
+    grid-template-rows: [hm-head-start] 3% [hm-head-end hm-menu-start] 400px [hm-menu-end hm-legend-start] 200px [hm-legend-end hm-foot-start] 1fr [hm-foot-end hm-row-margin-start] 3% [hm-row-margin-end];
+    align-items: start;
+    font-family: Arial, san-serif;
+    background-color: white;
+}
+
+.hm_header {
+    display: inline-block;
+    grid-column: hm-menu-start/hm-plot-end;
+    grid-row: hm-head-start/hm-head-end;
+    width: 100%;
+}
+
+.hm_plot_cell {
+    grid-column: hm-plot-start/hm-plot-end;
+    grid-row: hm-menu-start/hm-foot-end;
+    display: grid;
+    height: 100%;
+    width: 100%;
+    grid-template-columns: [plot-col-start] min-content [plot-col-area-start] 1fr [plot-col-area-end] min-content [plot-col-end];
+    grid-template-rows:    [plot-row-start] min-content [plot-row-area-start] 1fr [plot-row-area-end] min-content [plot-row-end];
+    justify-self: end;
+}
+
+.hm_plot_area {
+    grid-column: plot-col-area-start/plot-col-area-end;
+    grid-row: plot-row-area-start/plot-row-area-end;
+    overflow: hidden;
+}
+
+.hm_plot_vir_group {
+    grid-column: plot-col-start/plot-col-area-start;
+    grid-row: plot-row-area-start/plot-row-area-end;
+    padding: 0px 10px 0px 10px;
+    background-color: white;        
+    overflow: hidden;
+}
+
+.hm_plot_mab_group {
+    grid-column: plot-col-area-start/plot-col-area-end;
+    grid-row: plot-row-start/plot-row-area-start;
+    padding: 0px 0px 10px 0px;
+    background-color: white;
+    overflow: hidden;
+}
+
+.hm_plot_vir_names {
+    grid-column: plot-col-area-end/plot-col-end;
+    grid-row: plot-row-area-start/plot-row-area-end;
+    padding: 0px 15px 0px 10px;
+    background-color: white;
+    overflow-y: auto;
+}
+
+.hm_plot_mab_names {
+    grid-column: plot-col-area-start/plot-col-area-end;
+    grid-row: plot-row-area-end/plot-row-end;
+    padding: 10px 0px 15px 0px;
+    background-color: white;
+    overflow-x: auto;
+}
+
+.hm_menu {
+    grid-column: hm-menu-start/hm-menu-end;
+    grid-row: hm-menu-start/hm-menu-end;
+    height: 100%;
+    width: 100%;
+    justify-self: start;
+}
+
+.hm_menu>br {
+    line-height: 1px;
+}
+
+.hm_menu_item>br {
+    line-height: 1px;
+}
+
+#hm_menu_title {
+    font-family: Arial, san-serif;
+    font-size: 18px; 
+}
+
+.hm_menu_heading {
+    font-size: 14px; 
+    margin: 0px 0px 5px 0px;
+}
+
+.hm_menu_item {
+    background-color: #fff;
+    padding: 0px 5px;
+}
+
+.hm_item_btn {
+    -webkit-appearance: none;
+    vertical-align: top;
+    margin-left: 10px;
+    width: 13px;
+    height: 13px;
+}
+
+.hm_item_btn_radio {
+    /* background: url(../_webdav/CAVD/@files/report_files/mab_visualizations/images/radio.gif) no-repeat; */
+    background: url(../images/radio.gif) no-repeat;
+    cursor: pointer;
+}
+
+.hm_item_btn_checkbox {
+    background: url(../images/checkbox2.gif) no-repeat;
+    cursor: pointer;
+}
+
+.hm_item_btn:checked {
+    background-position: 0 -13px;
+}
+
+.hm_item_lab {
+    text-align: center;
+    margin-left: 10px;
+}
+
+.hm_legend {
+    grid-column: hm-menu-start/hm-menu-end;
+    grid-row: hm-legend-start/hm-legend-end;
+    height: 100%;
+    overflow: auto;
+    justify-self: start;
+    width: 100%;
+}
+
+#hm_tooltip {
+    background-color: #fff;
+    border: 1px solid #888;
+}
+
+#hm_tooltip>tr>td {
+    padding: 10px;
+}
+
+#hm_tooltip img {
+    border: 10px solid white;
+}
+
+div[class*="hm_plot_"]>svg{
+    shape-rendering: crispEdges;
+};

@@ -1,0 +1,279 @@
+---
+output: html_document_base
+---
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+
+<script>
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip(); 
+});
+</script>
+<style>
+th.rotate {
+  height: 150px;
+  white-space: nowrap;
+  background: white;
+  border:white;
+  top: 25px; 
+}
+
+th.rotate > div {
+    transform: translate(20px, 55px) rotate(315deg);
+    width: 35px;
+}
+th.rotate > div > span {
+  border-bottom: 1px solid #ccc;
+  padding: 5px 10px;
+}
+td.rowname {
+  z-index: 1;
+  position: sticky;
+  left: 0;
+  background-color: #FFFFFF;
+  padding-left: 5px;
+}
+td.assay-cell {
+  text-align:center;
+  height:35px;
+  width:35px;
+  padding:5px;
+  border: 1px solid #ddd;
+}
+table.assay-table {
+   border-collapse:collapse;
+}
+
+.col {
+  width:30%;
+  float:left;
+}
+img {
+height: 25px;
+width: 25px;
+max-width: 100%;
+}
+
+.header-above {
+  height: 25px;
+  z-index: 500;
+  position:sticky;
+  top:0;
+  background-color: #FFFFFF
+}
+
+.header-above > div {
+  transform: translate(0px, 50px);
+}
+</style>
+
+```{r, echo = FALSE}
+
+excludedAssays <- c("DEM SUPP")
+
+suppressPackageStartupMessages({
+  library(DataSpaceR)
+  library(Rlabkey)
+  library(data.table)
+  library(kableExtra)
+  library(xml2)
+})
+
+learnstudyassay <- setDT(labkey.selectRows(
+  baseUrl=labkey.url.base,
+  folderPath="/CAVD",
+  schemaName="CDS",
+  queryName="learn_studiesforassays",
+  viewName="",
+  colSelect=c("prot","assay_identifier","has_data","assay_status"),
+  colFilter=NULL,
+  containerFilter=NULL,
+  colNameOpt="rname"
+))
+learnstudyassay <- learnstudyassay[!assay_identifier %in% excludedAssays]
+
+accessible <- setDT(labkey.selectRows(
+  baseUrl=labkey.url.base,
+  folderPath="/CAVD",
+  schemaName="CDS",
+  queryName="UserStudyAccess",
+  viewName="",
+  colFilter=NULL,
+  containerFilter=NULL,
+  colNameOpt="rname"
+))
+
+# For testing only! ------------------------------------------------------------------------
+# accessible[, accessible := ifelse(studywithdata == "cvd463", FALSE, TRUE)]
+# ------------------------------------------------------------------------------------------
+
+# Add availability info
+data <- merge(learnstudyassay, accessible, by.x = "prot", by.y = "studywithdata", all.x = TRUE, all.y = TRUE)
+
+
+# Find out from Labkey how they determine what icons to use for data availability -- maybe implement? 
+
+# For now, is assay included in the study or not? 
+# eg grey fill if assay was done and green fill if data was added ("Data added to DataSpace")... then user can go to study page to get more details (maybe include link to study page?)
+grayx <- '<img src="/production/Connector/resources/images/learn/smallGreyX.png" class="transparent">'
+greencheck <- '<img src="/production/Connector/resources/images/learn/smallCheck.png" class="transparent">'
+graycheck <- '<img src="/production/Connector/resources/images/learn/grayCheck.png" class="transparent">'
+
+# Get data into correct format: one row per study, one column per assay
+invisible(data[, content := ifelse(has_data == TRUE,
+                                ifelse(accessible == TRUE, 
+                                       cell_spec(greencheck, tooltip = assay_status, escape = FALSE),
+                                       cell_spec(graycheck, tooltip = assay_status, escape = FALSE)),
+                                cell_spec(grayx, tooltip = assay_status, escape = FALSE)
+)])
+dat <- dcast(data, prot ~ assay_identifier, value.var = "content")
+dat <- apply(dat, 2, function(x){ifelse(is.na(x), "", x)})
+# dat <- apply(dat, 2, function(x){ifelse(x == " TRUE", greencheck, x)})
+# dat <- apply(dat, 2, function(x){ifelse(x == "FALSE", grayx, x)})
+
+# Column styling ----- 
+# Order columns so standard assays come first
+standardAssays <- c("BAMA", "IFNg ELS", "ICS", "NAB", "NAB MAB", "PK MAB")
+corder <- c("prot", standardAssays, colnames(dat)[!colnames(dat) %in% c("prot", standardAssays)])
+dat <- dat[,corder]
+# Add links to pages for standard assays
+colnames(dat) <- ifelse(colnames(dat) %in% standardAssays, 
+                        paste0("<a href='#learn/learn/Assay/", colnames(dat), "'>",
+                               colnames(dat), "</a>"), 
+                        colnames(dat))
+
+# nest colnames for styling
+colnames(dat) <-  paste0("<div><span>", colnames(dat), "</span></div>")
+# Remove "prot" label
+colnames(dat)[1] <- '<div><span style="border:transparent;"></span></div>'
+
+# Styling for prot names -----
+# pretty names (cvd -> CAVD; vtn -> HVTN; mrv -> RV)
+protnames <- dat[,1]
+protnames <- gsub("cvd", "CAVD ", protnames)
+protnames <- gsub("vtn", "HVTN ", protnames)
+protnames <- gsub("mrv", "RV ", protnames)
+dat[,1] <- paste0("<a href='#learn/learn/Study/", dat[,1], "' style='white-space:nowrap;'>",protnames,"</a>")
+dat <- dat[order(protnames),]
+
+
+# Add popovers on images with assay_status
+# dat_assay_status <- dcast(labkey.data, prot ~ assay_identifier, value.var = "assay_status")
+
+
+# dat[1,10] <- cell_spec(dat[1,10], extra_css = "width:500px")
+# dat[1,1] <- ""
+# dat[1, ] <- cell_spec(dat[1,], angle = 90, extra_css ="width:200px")
+# colnames(dat) <- NULL
+# Start with kable table
+
+
+
+# Create kable table
+# https://css-tricks.com/rotated-table-column-headers/
+k_xml <- kable(dat, "html", escape = FALSE) %>%
+  # column_spec(1, extra_css = "position: sticky;left: 0;background-color: #FFFFFF;") %>%
+  # column_spec(10, background = "yellow", width_min= "30em;", include_thead = TRUE) %>%
+  # column_spec(2, background = "orange", width = "10px", include_thead = TRUE) %>%
+  row_spec(0, background = "white") %>%
+  add_header_above(c(" ", 
+                     "Integrated Assays" = 7, 
+                     " " = ncol(dat) - 8)) %>% 
+  scroll_box(width = "90%", height = "700px;") %>%
+  kable_as_xml()
+
+# Use xml2 to add "rotate" class to all <th>
+# https://stackoverflow.com/questions/54425916/how-to-insert-html-in-table-of-kableextra
+k_xml %>%
+  xml_find_all("//thead/tr[2]/th") %>% 
+  xml_set_attr("class", "rotate")
+
+
+# Set z-index of headers to be increasing R to L
+thLength <- k_xml %>%
+  xml_find_all("//thead/tr[2]/th") %>% 
+  length
+invisible(
+  lapply(seq_len(thLength), function(i){
+  th <- k_xml %>% 
+    xml_find_all(paste0("//thead/tr[2]/th[", i, "]"))
+  th %>%
+    xml_set_attr("style", paste0(xml_attr(th, "style"), "z-index:", 500 + thLength - i+10, 
+                                 "; top:25px;"))
+})
+)
+ 
+k_xml %>%
+  xml_find_all("//td") %>%
+  xml_set_attr("class", "assay-cell")
+
+k_xml %>%
+  xml_find_all("//table") %>%
+  xml_set_attr("class", "assay-table")
+
+k_xml %>%
+  xml_find_all("//tr/td[1]") %>%
+  xml_set_attr("class", "rowname")
+
+# Styling for additional header
+k_xml %>%
+  xml_find_all("//thead/tr[1]/th") %>% 
+  xml_set_attr("class", "header-above")
+label <- k_xml %>%
+  xml_find_all("//thead/tr[1]/th[2]") 
+label %>%
+  xml_set_attr("style", paste0(xml_attr(label, "style"), "z-index:", 1000))
+
+table <- xml_as_kable(k_xml)
+
+```
+<br>
+
+# Introduction
+
+DataSpace brings together studies from HIV vaccine research networks which use a range of innovative strategies in search of an effective HIV vaccine. This compiled body of work conducted across networks emphasizes past and present translational research efforts to bridge the gap between basic discovery, product development, and disease prevention.
+
+The research conducted in these networks involves a range of humoral and cellular immunogenicity assays which evaluate immune responses at different stages of the HIV life cycle.
+
+The chart below shows a compiled view of the assays performed across studies with a study page in the DataSpace, and provides a quick view of the data available.
+
+# Immunogeniciy Assay Data Available by Study
+## Data Availability 
+<div style = "float: left;width: 100%;margin-bottom: 30px;>
+<div class = "col">
+<img src="/production/Connector/resources/images/learn/smallCheck.png" class="transparent" style = "height: 25px; vertical-align:middle;"> 
+&nbsp;
+&nbsp;
+__Available__ 
+
+Assay data for the study has been integrated with data from other studies and is available to explore in the DataSpace.
+</div>
+
+<div class = "col">
+<img src="/production/Connector/resources/images/learn/grayCheck.png" class="transparent" style = "height: 25px; vertical-align:middle;"> 
+&nbsp;
+&nbsp;
+__Restricted Access__ 
+
+Assay data for the study has been integrated with data from other studies, however, access to data for this study is currently restricted.
+</div>
+
+
+<div class = "col">
+<img src="/production/Connector/resources/images/learn/smallGreyX.png" class="transparent" style = "height: 25px; vertical-align:middle;"> 
+&nbsp;
+&nbsp;
+__Data not added__
+
+Assay data is not yet integrated with data from other studies. Individual, non-integrated data files may be available to download for this assay .
+</div>
+<!-- <div style="width:10%"></div> -->
+</div>
+
+
+*Hover over the icons to see the status of the data. Please refer to the study page for more information.*
+
+
+`r table`
+<br>
+<br>

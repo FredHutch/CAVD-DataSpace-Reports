@@ -1,68 +1,72 @@
 # CAVD DataSpace Reports
+## What are DataSpace Reports?
 
-| Report | Rmd | Author |
-| --- | --- | --- |
-| [Vaccine Strategies Used in CAVD Studies over Time](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A16) | [vaccine_strategies.Rmd](vaccine_strategies.Rmd) | [Joe Hicks](https://github.com/joewhicks) |
-| [CAVD Study Types over Time](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A17) | [study_types.Rmd](study_types.Rmd) | [Joe Hicks](https://github.com/joewhicks) |
-| [CAVD434 - A Case Study Using DataSpaceR](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A18) | [CAVD434.Rmd](CAVD434.Rmd) | [Bryan T. Mayer](https://github.com/bryanmayer) |
-| [Durability analysis for NYVAC challenge study timing](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A19) | [durability_analysis.Rmd](durability_analysis.Rmd) | [Bryan T. Mayer](https://github.com/bryanmayer) |
+[DataSpace](https://dataspace.cavd.org/cds/CAVD/app.view) is a data sharing and discovery tool for HIV clinical and pre-clinical vaccine studies. Dataspace offers an interactive way to explore information and data regarding HIV vaccine trials from multiple HIV vaccine trial networks via a web based graphical user interface or an interactive R API.
 
+DataSpace reports are reports contributed by the DataSpace team, or other members of the research community. These reports are designed to explore or analyze data from the application and they can be viewed in the application in the "Learn about" section.
 
-## How to create new reports
+All contributed reports are generated via R Markdown, and data is extracted from the application for the reports via [DataSpaceR](https://github.com/ropensci/DataSpaceR). DataSpaceR is the R based API for accessing data from DataSpace. In combination with R Markdown, reports can be run locally, or in the application when added by the DataSpace team.
 
-### Current workflow
+DataSpace reports are designed to show workflows, reproduce results from publications, explain content in the application, show results of an exploratory analysis, or explain immunology concepts.
 
-1. Navigate to [the CAVD project folder](https://dataspace.cavd.org/project/CAVD/begin.view?) and create a new report using LabKey's `R Report Builder` by clicking down arrow in "Data Views" panel and "Add Report" and then "R Report". Or just navigate to this [link](https://dataspace.cavd.org/reports/CAVD/createScriptReport.view?scriptExtension=&tabId=Source&reportType=ReportService.rReport&redirectUrl=%2Fproject%2FCAVD%2Fbegin.view%3F).
-2. Add yaml header, knitr options, and css path to "Script Source" section
+## Where to view reports in DataSpace.
 
-* yaml header
-```yaml
+Rendered DataSpace reports can be found by:
+
+* logging into DataSpace, 
+* going to the Learn about section, 
+* then clicking on the Reports tab.
+
+![](md_resources/report_page_in_cds.png)
+
+## What is the purpose of this repository.
+
+This repository stores all the report code found in the application. It stores all the report code for reports found in Learn, as well as the code used to generate the reports found in the ("Monoclonal antibody" section.)[https://dataspace.cavd.org/cds/CAVD/app.view#mabgrid]
+
+R Markdown files in this repository are available to the public and may be used to generate reports, as seen in the application in a local environment, or as example code for writing new or modified reports. This repository alos provides an opportunity for other members of the HIV vaccine research community to contribute code for new reports, which can be included in the application along with the reports developed by the DataSpace team.
+
+Please notify the DataSpace team of any presentations or publications resulting from the report code found in this repository and/or data obtained from DataSpace. Remember to acknowledge the CAVD DataSpace, as well as the grant and study investigators.
+
+## How to contribute.
+
+DataSpace users are welcome to submit report code to be displayed in the application. Reports can be submitted by making a pull request with the following considerations:
+
+* Rmd files are to be added to this repository's [reports](reports) folder.
+* Any dependency code required by the report is to be added to the [dependencies](dependencies) folder, in a folder with the same name of the report.
+* A graphic to be displayed with the report summary should be added to the [thumbnails](thumbnails) directory.
+* All data accessed by the report in the Rmd should be accessed via the DataSpaceR API.
+* Rmd files are knitted to HTML using the yaml header: 
+
+```` yaml
 ---
-output: html_document_base
+output: html_document
 ---
-```
+````
 
-* knitr options
-````r
+* For best results, also use the following chunk at the top of the report.
+
+```` r
 ```{r set-options, include=FALSE}
 knitr::opts_chunk$set(
-  cache = TRUE, # optional
-  cache.path = paste0(labkey.file.root, 
-                      "/cache/REPORTNAME/",
-                      labkey.user.email,
-                      "/"), # optional
   warning = FALSE,
   message = FALSE,
   highlight = TRUE,
   tidy = TRUE,
-  fig.align = "center")
+  fig.align = "center"
+  )
 ```
 ````
 
-* css path:
+To use our CSS, add the following text to the markdown of the Rmd file.
+
 ```html
-<link rel="stylesheet" type="text/css" href="../../_webdav/home/files/%40files/blog/theme/cds-theme/css/RReport.css">
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport_condensed.css">
 ```
 
-3. Write analysis after css path.
-4. Configure report options. Make sure that "Markdown" and "Use default output_format options" options are **checked** in "Knitr Options" section of the report builder.
-5. Save and edit properties and thumbnail image (name, author, status, description, etc). Click the `pencil` icon next to the title section of "Data Views" and then the "pencil" icon next to the report you just worked on. Make sure you add in the details correctly and "Share this report with all users?" is check if you'd like the report to be public. Also, upload a pre-rendered thumbnail image of the report.
-6. Render the report in the app and make changes if needed.
-7. Once you finalized the report in the report builder, create a Rmd file in this repo and copy-and-paste the report.
+Once the report is ready to submit, make a pull request and we will review the report for submission to DataSpace.
 
+## Questions?
 
-### Potential workflow (need to propose this to LabKey)
+If you have any questions please reach out to our team.
 
-1. Create a new Rmd file in this repository.
-2. Add yaml header, knitr options, and css path to the Rmd file.
-3. Write analysis on the Rmd file.
-4. Create a new report using LabKey's R Report Builder.
-5. Configure report options (knitr options and **script source file**). **Script source file** will be the raw link to the Rmd file (i.e., https://raw.githubusercontent.com/CAVDDataSpace/reports/master/vaccine_strategies.Rmd) and the report builder will render the report from this file instead of code from the editor in R Report Builder.
-6. Save and edit properties (name, author, status, description, etc).
-7. Render the report in the app and make changes if needed.
-
-
-## Notes
-* You need to be a **site admin** in order to create R reports.
-* You don't need to worry about `netrc` file in LabKey R reports
-* If you decide to use `cache` in knitr options, you must manually create the report cache directory in the labkey server (`/labkey/labkey/files/CAVD/@files/cache`).
+Contact DataSpace support: dataspace.support@fredhutch.org

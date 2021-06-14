@@ -1,0 +1,385 @@
+---
+title: 'DataSpace Report'
+output:
+  html_document
+---
+
+# HVTN 505 Highlights from: _Antibody Fc effector functions and IgG3 associate with decreased HIV-1 risk_ (Neidich 2019)
+
+The intention of this report is to demonstrate how to reproduce
+research using integrated and non-integrated datasets from DataSpace.
+DataSpace has always provided integrated data to its users, that is,
+data that has been integrated into our standardized schema, but now
+DataSpace also offers study-specific datasets and asssays to
+suppliment data that provided in the app in an integrated
+format.
+
+Here, using DataSpaceR’s access to both integrated and non-integrated
+datasets, we can reproduce some of the results from the published
+paper, Antibody Fc effector functions and IgG3 associate with
+decreased HIV-1 risk by (Neidich 2019).
+
+[https://www.ncbi.nlm.nih.gov/pubmed/31589165](https://www.ncbi.nlm.nih.gov/pubmed/31589165)
+
+This analysis is not a complete reproduction of the original work,
+focusing only on a subset of the final analysis.  The data was not
+processed precisely the same way, although we do attempt to recreate
+similar processing in effort to match the original analysis.
+
+A few of the key results were reproduced below. Parts of the result
+section of the original paper are quoted below and appear in order as
+they do in the original paper to highlight those findings:
+
+> The response rate for HIV-1 Env Con S gp140 FcγRIIa was 98.7%
+
+> In a regression analysis controlling for age, race, behavior risk,
+> and body mass index (BMI), the primary hypothesis outcomes of IgG
+> ADCP and FcγRIIa responses to HIV-1 Env glycoprotein Con S gp140
+> were both inversely correlated with HIV-1 acquisition risk.
+
+> HIV-1 Env IgG3 correlates with decreased HIV-1 risk in a human HIV-1
+> vaccine efficacy trial.
+
+> Vaccine-matched gp140 IgG3 response rates were high, ranging from
+> 55% to 90%...
+
+> V1V2 IgG3 response rates were very low (<20%) and were not included
+> in the test for association with HIV-1 acquisition.
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport_condensed.css">
+
+## Reading in integrated and non-integrated data
+
+We will use a combination of `DataSpaceR` and `Rlabkey` to retrieve
+the integrated and non-integrated datasets respectively.
+
+```{r set-options, echo=FALSE}
+
+knitr::opts_chunk$set(cache = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      highlight = TRUE,
+                      fig.align = "center",
+                      fig.width = 11)
+
+```
+
+```{r retrieve-process}
+
+library(data.table)
+library(DataSpaceR)
+library(Rlabkey)
+library(ggplot2)
+
+## reading integrated data with DataSpaceR
+
+con <- connectDS()
+stu <- con$getStudy("vtn505")
+bam <- copy(stu$getDataset("BAMA"))
+dem <- copy(stu$getDataset("Demographics"))
+
+## reading non-integrated data with DataSpaceR
+
+fca <- copy(stu$getDataset("Fc Array"))
+adc <- copy(stu$getDataset("ADCP"))
+dms <- copy(stu$getDataset("DEM SUPP"))
+
+dem <- dem[,`:=`(
+    trt = vapply(study_arm, function(x) switch(x, "C1" = 0, "T1" = 1), c(1))
+    )];
+
+dem <- merge(dem, dms[, .(ParticipantId, bhvrisk, HIVwk28, cc_cohort, cc_strata)], by = "ParticipantId");
+setnames(dem, c("age_enrollment", "bmi_enrollment"), c("age", "bmi"))
+
+## Antigen name mapping coming soon to DataSpace. This mapping was
+## done manually for this work.
+
+antigenNameMapping <- function(x){
+    switch(tolower(make.names(x)), 
+           "a1.con.env03.140.cf"      = "A1 Con Env03 gp140 CF",
+           "ae.a244.v1v2.tags.293f"   = "AE A244 V1V2 Tags/293F",
+           "b.con.env03.140.cf"       = "B Con Env03 gp140 CF",
+           "b.mn.v3.gp70"             = "B MN V3 gp70",
+           "c.1086.v2.tags.293f"      = "C 1086 V2 Tags/293F",
+           "c.1086c_v1_v2.tags"       = "C 1086C V1V2 Tags",
+           "c.con.env03.140.cf_avi"   = "C Con Env03 gp140 CF avi",
+           "c.con.env03.140.cf"       = "C Con Env03 gp140 CF",
+           "con.6.gp120.b"            = "Con 6 gp120/B",
+           "con.s.gp140.cfi"          = "Con S gp140 CFI",
+           "gp41"                     = "gp41",
+           "gp70.v1v2..a."            = "gp70 V1V2 (A)",
+           "gp70_b.casea2.v1.v2.169k" = "gp70 B CaseA2 V1/V2/169K",
+           "gp70_b.casea_v1_v2"       = "gp70 B CaseA V1V2",
+           "gp70_c.1086c.v1.v2.293f"  = "gp70 C 1086C V1/V2/293F",
+           "p24"                      = "p24",
+           "vrc.a_avi"                = "VRC A gp140 avi",
+           "vrc.b.gp140"              = "VRC B gp140",
+           "vrc.c_avi"                = "VRC C gp140 avi",
+           "vrc_a_gp70v1v2_avi"       = "VRC A gp70 V1V2 avi",
+           x)
+}
+
+```
+
+## Findings
+
+### _The response rate for HIV-1 Env Con S gp140 FcγRIIa was 98.7%_
+
+```{r}
+
+fcaResp <- copy(fca)
+
+fcaResp <- fcaResp[, antigen:=vapply(antigen, antigenNameMapping, c("a"))]
+
+fcaResp <- dem[,.(ParticipantId, trt)
+               ][fcaResp, on = "ParticipantId"]
+
+fcaResp[study_day == 196 & antibody_isotype == "FcgRIIa H131" & antigen == "Con S gp140 CFI" & trt == 1,
+    round(sum(fca_response)/length(fca_response), 3)
+]
+
+```
+
+### _In a regression analysis controlling for age, race, behavior risk,and body mass index (BMI), the primary hypothesis outcomes of IgG ADCP and FcγRIIa responses to HIV-1 Env glycoprotein Con S gp140 were both inversely correlated with HIV-1 acquisition risk._ 
+
+The type of regression used in the original analysis was a two phase
+regression model provided by `osDesign::tps()`.
+
+```{r}
+
+library(osDesign)
+
+assignStratumNumber <- function(stn){
+    switch(stn,
+           "Vacc/Blk_Hisp/[18.4, 25)" = 1,
+           "Vacc/Blk_Hisp/[25, 29.8)" = 2,
+           "Vacc/Blk_Hisp/[29.8, 40)" = 3,
+           "Vacc/White/[18.4, 25)"    = 4,   
+           "Vacc/White/[25, 29.8)"    = 5,
+           "Vacc/White/[29.8, 40)"    = 6,
+           -1 
+           )
+}
+
+dem <- dem[,stratum_num := vapply(cc_strata, assignStratumNumber, c(1))]
+
+## define case and controls counts for tps
+
+dem <- dem[,`:=`(
+    nn0 = sum(HIVwk28 == 0),
+    nn1 = sum(HIVwk28 == 1)
+), by = stratum_num]
+
+## process data: log transform fca, subset to day 196 and RIIa, cast on antigen
+
+fca <- fca[, lfi:=log(1+pmax(0, mfi_delta))]
+fcc <- dcast(fca[antibody_isotype == "FcgRIIa H131" & study_day == 196,], ParticipantId~antigen, value.var="lfi")
+setnames(fcc, names(fcc)[-1], paste0("R2a.", names(fcc)[-1]))
+
+dat <- adc[study_day == 196, .(ParticipantId, avg_phagocytosis_score)
+           ][fcc, on = "ParticipantId"]
+setnames(dat, "avg_phagocytosis_score", "ADCP")
+setnames(dat, names(dat), make.names(names(dat)))
+
+## reduce data to treatment subjects only
+
+dat <- dem[dat
+           ][trt == 1]
+
+## make stratum group counts
+
+nnx <- dem[,.N, by = .(stratum_num, nn0, nn1)
+           ][order(stratum_num)
+             ][stratum_num > 0,.(nn0, nn1)]
+
+## fit tps regression
+
+tpsFit <- function(var, dat){
+    reg_form <- paste("HIVwk28 ~ age + race + bhvrisk + bmi + ", var)
+
+    dat <- dat[!is.na(dat[[var]])]
+    dat[[var]] <- scale(dat[[var]])
+
+    fit <- tps(
+        formula = reg_form,
+        data    = dat,
+        nn0     = nnx$nn0,
+        nn1     = nnx$nn1,
+        group   = dat$stratum_num
+    )
+
+    res <- summary(fit)$coef
+    res <- cbind(
+        res[,c("Value","Emp p")],
+        "lower bound" = res[,"Value"] - ( res[, "Emp SE"] * 1.96 ),
+        "upper bound" = res[,"Value"] + ( res[, "Emp SE"] * 1.96 )
+    )
+    res[,c("Value", "lower bound", "upper bound")] <- exp(res[,c("Value", "lower bound", "upper bound")])
+    colnames(res) <- c("OR", "p.value", "lower", "upper")
+    res <- data.table(data.frame(res)[var,])[,intercept:=var]
+    setcolorder(res, c(ncol(res), 1:(ncol(res)-1)))
+}
+
+results <- rbindlist(lapply(c("ADCP", grep("^R2a", names(dat), value = TRUE)), tpsFit, dat = dat))
+setnames(results, "intercept", "variable")
+
+results <- results[, variable := sapply(gsub("^R2a\\.", "", variable), antigenNameMapping)]
+
+knitr::kable(
+         results[order(p.value)],
+         caption = "Results from univariant regression of a two phase design.",
+         col.names = c("Variable", "OR", "p value", "lower", "upper"),
+         digits = 3
+       )
+
+## plot OR and mfi delta highlighting very low p values
+
+dat <- dat[,grep("^R2a|ADCP", names(dat)), with = F]
+dat <- melt(
+    dat,
+    value.name = "log_mfi_delta",
+    variable.name = "variable"
+)
+
+dat <- dat[, variable:=sapply(gsub("^R2a\\.", "", variable), antigenNameMapping)]
+
+dat <- results[dat[, mfi_delta:=exp(log_mfi_delta)
+                   ][, med_mfi_delta:=median(mfi_delta, na.rm = TRUE), by = variable],
+               on = "variable"
+                 ][, sig:=ifelse(p.value <= 0.005, "p ≤ 0.005", "p > 0.005")]
+
+ggplot(data = dat[,.N, by = .(med_mfi_delta, OR, variable, sig)],
+       aes(med_mfi_delta, OR, color = sig)) +
+    geom_point() +
+    geom_text(aes(label=variable), hjust=0, vjust=0, show.legend = F) +
+    theme_bw() + 
+    scale_color_manual(name = "p value",
+                       values = c("p ≤ 0.005" = "black", "p > 0.005" = "grey70")) +
+    ggtitle("Odds Ratio of HIV-1 Risk and Median MFI Delta") +
+    xlab("Median MFI Delta") +
+    ylab("Odds Ratio")
+
+```
+
+### _HIV-1 Env IgG3 correlates with decreased HIV-1 risk in a human HIV-1 vaccine efficacy trial._
+
+```{r}
+
+bam <- copy(stu$getDataset("BAMA"))
+
+bam <- bam[, lfi:=log(1+pmax(0, mfi_delta))]
+
+bam <- dcast(
+    bam[antibody_isotype == "IgG3" & visit_day == 196,],
+    ParticipantId~antigen,
+    value.var = "lfi"
+)
+
+setnames(bam, names(bam),     make.names(names(bam)))
+setnames(bam, names(bam)[-1], paste0("mfi.", names(bam)[-1]))
+
+## reset stratum_num
+
+dem <- dem[,stratum_num := vapply(cc_strata, assignStratumNumber, c(1))]
+
+## define case and controls counts for tps
+
+dem <- dem[,`:=`(
+    nn0 = sum(HIVwk28 == 0),
+    nn1 = sum(HIVwk28 == 1)
+), by = stratum_num]
+
+bam <- dem[,.(ParticipantId, stratum_num, trt, HIVwk28,  age, race, bhvrisk, bmi, nn0, nn1)
+           ][bam
+             ][trt == 1]
+
+results <- rbindlist(lapply(grep("^mfi.", names(bam), value = TRUE), tpsFit, dat = bam))
+setnames(results, "intercept", "antigen")
+results <- results[, antigen_name:=sapply(gsub("^mfi\\.", "", antigen), antigenNameMapping)]
+
+knitr::kable(results[order(p.value), .(antigen_name, OR, p.value, lower, upper)],
+             caption = "IgG3 Binding Antibody Correlated to HIV-1 Risk of Infection",
+             col.names = c("antigen", "OR", "p value", "lower", "upper"),
+             digits = 3)
+
+mnames <- grepl("^mfi", names(bam))
+
+bam <- results[,antigen_name:=NULL][
+    melt(
+        bam,
+        names(bam)[!mnames],
+        names(bam)[mnames],
+        value.name = "log_mfi_delta",
+        variable.name = "antigen"
+    ), on = "antigen"]
+
+bam <- bam[, antigen:=sapply(gsub("^mfi\\.", "", antigen), antigenNameMapping)]
+bam <- bam[, mfi_delta:=exp(log_mfi_delta)]
+bam <- bam[, antigen:=paste0(antigen, "\n(OR = ", round(OR, 2), ")")]
+
+clr <- colorRampPalette(c("royalblue4", "steelblue3", "grey70", "grey90"))(10)
+
+ggplot(bam[!is.na(mfi_delta)], aes(antigen, mfi_delta)) +
+    geom_boxplot(aes(fill = p.value)) +
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.margin = margin(0.5, 0.5, 0.5, 1, "cm")) +
+    scale_x_discrete(limits = unique(bam$antigen)) +
+    scale_y_continuous(trans='log10') +
+    scale_fill_gradientn(name = "p value", colors = clr, trans='log10') +
+    ggtitle("IgG3 Binding Antibody MFI Delta Correlated to HIV-1 risk") +
+    xlab("Antigen (Odds Ratio)") +
+    ylab("MFI Delta")
+
+```
+
+### _Vaccine-matched gp140 IgG3 response rates were high, ranging from 55% to 90%..._
+
+```{r}
+
+bam <- copy(stu$getDataset("BAMA"))
+bam <- bam[, antigen:=sapply(make.names(antigen), antigenNameMapping)]
+
+bam <- dem[,.(ParticipantId, stratum_num, trt, HIVwk28,  age, race, bhvrisk, bmi, nn0, nn1)
+           ][bam[visit_day == 196]
+             ][trt == 1 & antibody_isotype == "IgG3"
+               ][order(antigen)]
+
+knitr::kable(
+           bam[
+               grepl("140", antigen),
+               .(response_rate = sum(response_call == 1)/length(response_call)),
+               by = antigen
+           ],
+           col.names = c("Antigen", "Response Rate"),
+           digits = 3)
+
+```
+
+### _V1V2 IgG3 response rates were very low (<20%) and were not included in the test for association with HIV-1 acquisition._
+
+```{r}
+
+knitr::kable(
+           bam[
+               grepl("V1|V2", antigen),
+               .(response_rate = sum(response_call == 1)/length(response_call)),
+               by = antigen
+           ],
+           col.names = c("Antigen", "Response Rate"),
+           digits = 3)
+
+```
+
+```{r}
+
+ggplot(bam[,.(response_rate = sum(response_call == 1)/length(response_call)), by = antigen],
+       aes(reorder(antigen, -response_rate), response_rate)) +
+    geom_bar(stat="identity", ) +
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    ggtitle("BAMA Response Rate for IgG3 Biniding Antibodies") + 
+    xlab("Antigen") +
+    ylab("Response Rate")
+
+```

@@ -1,0 +1,108 @@
+---
+output: html_document
+---
+
+```{r include = F, echo = F}
+
+library(data.table)
+
+srvDir <- "/labkey/labkey/files"
+webDir <- "../../_webdav"
+depDir <- "/CAVD/@files/CAVD-DataSpace-Reports/dependencies/mab_visualizations"
+
+setwd(paste0(srvDir, depDir))
+source("./data_create.R")
+
+```
+
+```{r appendData, results = "asis", echo = F}
+
+cat("<script>", appendDataObjects(mabDat), "</script>")
+
+```
+
+<script>
+
+    (() => {
+
+        let reportsdir = `r paste0(webDir, depDir)`;
+
+        d3
+            .select("head")
+            .append("link")
+            .attr("type", "text/css")
+            .attr("rel", "stylesheet")
+            .attr("href", reportsdir + "/css/mab_visualization_styles.css");
+        
+        [
+            "/hm_functions.js",
+            "/mb_functions.js",
+            "/nc_functions.js",
+            "/data_process.js",
+            "/hm.js",
+            "/mb.js",
+            "/nc.js",
+            "/neutralizationGrid.js"
+        ].forEach(src => {
+            var script = document.createElement('script');
+            script.type = "text/javascript"
+            script.src = reportsdir + src;
+            script.async = false;
+            document.head.appendChild(script);
+        });
+
+    })();
+
+    (() => {
+    
+        let cover = document.createElement("div");
+        cover.setAttribute("id", "mab_report_temp_cover");
+        
+        let styles = {
+            'backgroundColor' : "#000000",
+            'opacity'         : 0.6,
+            'position'        : "absolute",
+            'left'            : "-10%",
+            'height'          : "100%",
+            'width'           : "110%",
+            'zIndex'          : 1000
+        }
+        
+        Object.assign(cover.style, styles)
+        document.querySelector("div[class='labkey-knitr'").prepend(cover)
+        
+        let removeCover = setInterval(function(){
+            let rep = document.querySelectorAll(".mabreportcont");
+            if(rep.length != 0 && this.mabReportData.plotStatus.length == 3){
+                clearInterval(removeCover);
+                [...rep].forEach(r => r.style.display = "none");
+                document.querySelector("#mab_report_temp_cover").outerHTML = "";
+            }
+        },100);
+
+    })();
+
+    var mabActiveTab = function(e, tabname){
+        var tabs = document.querySelectorAll(".mabreporttab");
+        var cont = document.querySelectorAll(".mabreportcont");
+        tabs.forEach(d => d.className = d.className.replace("active", ""));
+        cont.forEach(d => d.style.display = "none");
+        [...tabs].filter(d => d.id.includes(tabname)).forEach(d => d.className += " active");
+        [...cont].filter(d => d.id.includes(tabname)).forEach(d => d.style.display = "block");
+    }
+
+</script>
+
+<div class="mabreporttabs">
+  <h1 class="mabreporttab" id="mab_neutcrv" onclick="mabActiveTab(event, 'mab_neutcrv')">Neutralization Curves</h1>
+  <h1 class="mabreporttab" id="mab_neutgrd" onclick="mabActiveTab(event, 'mab_neutgrd')">Neutralization Grid</h1>
+  <h1 class="mabreporttab" id="mab_mbcurve" onclick="mabActiveTab(event, 'mab_mbcurve')">Magnitude Breadth Curves</h1>
+  <h1 class="mabreporttab" id="mab_heatmap" onclick="mabActiveTab(event, 'mab_heatmap')">Titer Heatmap</h1>
+</div>
+
+<div class="mabreportconts">
+  <div class="mabreportcont" id="mab_neutcrv"></div>
+  <div class="mabreportcont" id="mab_mbcurve"></div>
+  <div class="mabreportcont" id="mab_heatmap"></div>
+  <div class="mabreportcont" id="mab_neutgrd"></div>
+</div>

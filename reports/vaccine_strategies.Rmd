@@ -1,0 +1,163 @@
+---
+output: html_document_base
+---
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+
+```{r, echo=FALSE, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.width = 18, 
+                      fig.height = 8, 
+                      fig.align="left")
+
+suppressWarnings({
+    library(ggplot2)
+    library(data.table)
+    library(DataSpaceR)
+})
+
+options(stringsAsFactors = F)
+options(warn = -1)
+
+# Load Data
+con <- connectDS()
+study <- con$availableStudies
+
+study_strategy_df <-study[, .(study_name, strategy, start_date)]
+study_strategy_df$study_year <- substr(study_strategy_df$start_date, 1,4)
+
+study_strategy_df[ study_strategy_df$strategy %like% "Combo:", strategy_arg := "Combination regimens"]
+study_strategy_df[!study_strategy_df$strategy %like% "Combo:", strategy_arg := strategy]
+
+# Get NAs excluded from graphs of "year"
+totalStudies <- nrow(study)
+totalComboStudies <- nrow(study_strategy_df[strategy_arg == "Combination regimens"])
+# missingYear <- sum(is.na(study$start_date))
+# missingStrategy <- sum(is.na(study$strategy))
+# allMissing <- sum(is.na(study$start_date) | is.na(study$strategy))
+```
+
+```{r strategy}
+
+study_strategy_n <- na.omit(study_strategy_df[, .(n = .N), by = strategy])
+setorder(study_strategy_n, -n)
+plot1StudyCount <- sum(study_strategy_n$n)
+
+
+master_plot_1 <- ggplot(study_strategy_n, aes(x=  reorder(strategy, n), y=n, label = n)) +
+    geom_bar(width=.75, stat="identity",  fill="#fa2d5a", col="#fa4d5a") +
+    coord_fixed() +
+    coord_flip() +
+    ggtitle(bquote(atop(.("Total Number of Studies by Strategy"), atop(.("2003-present"), "")))) +
+    geom_text(aes(y = n, label = n, size = 12), hjust = -1.0,) + 
+    theme(
+        text = element_text(family="Georgia"),
+        ##plot.title = element_text(size=25),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_text(size=12), 
+        panel.background = element_blank(),
+        legend.position="none",
+        plot.title = element_text(size=25, family="Georgia")
+    )+ 
+    geom_hline(aes(yintercept=0), colour="#a0a0a0") 
+```
+
+```{r strategy_stacked_bar}
+
+study_strategy_df <- na.omit(study_strategy_df)
+plot2StudyCount <- nrow(study_strategy_df)
+
+cbPalette<-c("#828282", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+master_plot_2 <- ggplot(study_strategy_df, aes(study_year, fill=strategy_arg)) +
+    geom_bar() +
+    ggtitle("Number of Studies by Strategy and Study Year") +
+    theme(
+        text = element_text(family="Georgia"),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#e1e1e1"),
+        legend.title=element_blank(),
+        plot.title = element_text(size=20, family="Georgia")
+        ##plot.title = element_text(family="Georgia")
+    ) +
+    scale_fill_manual(values= cbPalette)
+```
+
+```{r start_year_facet}
+
+strategy_year_n <- na.omit(study_strategy_df[grepl("Combination", strategy_arg), .(study_name, strategy, study_year)])
+strategy_year_n <- strategy_year_n[study_year != "", .(n = .N), by = c("strategy", "study_year")]
+setorder(strategy_year_n, -n)
+plot3StudyCount <- sum(strategy_year_n$n)
+
+strategy_year_n$study_year <- as.numeric(strategy_year_n$study_year)
+
+master_plot_3 <- ggplot(strategy_year_n, aes(x= study_year, y=n))+
+  facet_wrap(~strategy, ncol = 5) + 
+  scale_y_continuous( limits = c(0, 10), breaks = c(0, 5, 10), labels = c("0", "5", "10"), expand =  )+
+  scale_x_continuous(limits = c(2000, 2020), breaks = c(2000, 2010, 2020), labels = c("2000", "2010", "2020"), expand = c(0.1, 0.1)) +
+  geom_bar(stat="identity", fill="#fa2d5a") + 
+  ggtitle("Number of Studies Using Combination Regimens by Strategy and Start Year") + 
+  theme(
+    text = element_text(family="Georgia"),
+    axis.text.y = element_text(size=12),
+    axis.text.x = element_text(vjust = 3),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_line(colour = "#e1e1e1"),
+    plot.title = element_text(size=20, family="Georgia"),
+    panel.spacing.x = unit(15, "pt"),
+    panel.spacing.y = unit(15, "pt"),
+    ## plot.title = element_text(family="Georgia")
+  )
+```
+
+# Introduction
+<br><br>
+DataSpace brings together studies from HIV vaccine research networks which use a range of innovative strategies in search of an effective HIV vaccine. This compiled body of work conducted across networks emphasizes past and present translational research efforts to bridge the gap between basic discovery, product development, and disease prevention.
+<br><br>
+The research conducted in these networks involves evaluation of a variety of vaccine strategies. These strategies typically refer to the type, or class, of products being administered individually or in combination, e.g. DNA, proteins, viral or bacterial vectors, virus-like particles (VLPs), or prophylactic neutralizing antibodies. Each strategy has an underlying approach designed to engage an immune response, either by blocking the infection (antibody response) or destroying infected cells (cell-mediated response).
+<br><br>
+The strategy assigned to an individual study represents the long-term plan for the vaccine(s) or biologic(s) as a preventive or therapeutic treatment. For basic discovery studies that don’t involve the administration of a product, these studies are associated with the vaccine strategy for which the study is designed to contribute and/or the strategy that will be most impacted by the results from the study. As an example, the strategy, “prophylactic neutralizing antibody”, includes passive immunization studies where broadly neutralizing antibodies (bnAbs) are being infused prophylactically, as well as studies which evaluate the neutralization activity of monoclonal antibodies to determine if they are bnAbs that would be good candidates for a passive immunization regimen in subsequent studies.
+<br><br>
+The figures below show the number of studies conducted in member networks since 2003 and the overall vaccine strategies they represent.
+<br><br><br><br>
+
+
+```{r plot_1}
+master_plot_1 
+```
+<br><br>
+*Figure 1. This graph shows the total number of studies in DataSpace by the vaccine strategies they represent. `r if (totalStudies - plot1StudyCount > 0) {paste0("(Note: ", totalStudies - plot1StudyCount, " studies missing vaccine strategy information are excluded from this plot)")}`*
+<br><br><br><br>
+```{r plot_2}
+master_plot_2
+```
+<br><br>
+*Figure 2. This graph shows the total number of studies in DataSpace by vaccine strategy and the year the study started (i.e. was registered or opened to enrollment). All strategies involving combinations of products are labeled as ‘Combination regimens’. See Figure 3 for a breakdown of combination regimens by year.  `r if (totalStudies - plot2StudyCount > 0) {paste0("(Note: ", totalStudies - plot2StudyCount, " studies missing date or strategy information are excluded from this plot)")}`*
+<br><br><br><br>
+```{r plot_3}
+master_plot_3 
+```
+<br><br>
+*Figure 3. This graph shows the number of studies in DataSpace using combination regimens by strategy and the year the study started (i.e. was registered or opened to enrollment). `r if (totalComboStudies - plot3StudyCount > 0) {paste0("(Note: ", totalComboStudies - plot3StudyCount, " studies missing date information are excluded from this plot)")}`*
+<br><br><br><br>

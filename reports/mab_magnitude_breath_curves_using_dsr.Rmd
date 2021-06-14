@@ -1,0 +1,304 @@
+---
+title: "DataSpace Report"
+output: "html_document"
+---
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport_condensed.css">
+
+```{r set-options, include=FALSE}
+
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  highlight = TRUE,
+  tidy = FALSE,
+  fig.align = "center",
+  fig.width = 10)
+ 
+```
+
+```{r load-packages, include=FALSE}
+
+library(DataSpaceR)
+library(data.table)
+library(ggplot2)
+
+```
+
+# Magnitude Breadth Curves Using DataSpaceR
+
+The following report is intended to show a workflow for interfacing
+with DataSpaceR's mAb utilities to create magnitude breadth curves.
+
+For a more detailed explanation of DataSpaceR's mAb utilites, see the
+DataSpaceR vignettes.
+
+First, connect to DataSpace, then display the summary of the mAb grid
+via `mabGridSummary`. See other documentations associated with this
+package for setting up proper credentials for accesing data using
+DataSpaceR.
+
+The `mabGridSummary` table will be a running summary of the results we
+have in our current filter.
+
+Showing only the top 10 rows below.
+
+```{r using-mab-grid}
+
+con <- connectDS()
+con$mabGridSummary[1:10]
+
+```
+
+It is possible to query the grid as one would a `data.frame` type R
+object. The mAb grid is actually stored as a `data.table` object.
+
+The `mabGridSummary` field associated with the connection object is
+where one can find the mAb grid. Shown below are a couple of examples
+of how the grid can be queried.
+
+```{r}
+
+con$mabGridSummary[con$mabGridSummary$geometric_mean_curve_ic50 < 0.01]
+con$mabGridSummary[hxb2_location %like% "gp160"]
+con$mabGridSummary[mab_mixture %like% "PGT"]
+ 
+```
+
+Once the grid has been explored, we can select a list of mAbs we would
+like data for.
+
+In this case we are selecting all PGT mabs that exist in a mixture and
+the individual components for those mixtures.
+
+To filter the grid, use the `filterMabGrid` method on the connection
+object. One can filter on any value found in any field in the
+`mabGrid` table.
+ 
+The API will throw a warning if there is a value that is passed that
+is not found in the column that is filtered.
+
+```{r select-mabs}
+
+names(con$mabGrid)
+
+pgtMix <- con$mabGridSummary[mab_mixture %like% "PGT" & mab_mixture %like% "\\+", mab_mixture]
+pgtMix <- c(pgtMix, unique(unlist(strsplit(pgtMix, " \\+ |/"))))
+sort(pgtMix)
+
+con$filterMabGrid("mab_mixture", pgtMix)
+
+```
+
+View the grid by calling `mabGridSummary` or `mabGrid`, then get the
+mAb object associated with the grid using the `getMab` method.
+
+Using the mAb object, one can get the NAb mAb data for the mAbs that
+were selected.
+
+```{r view-then-extract}
+
+con$mabGridSummary
+
+mab <- con$getMab()
+names(mab)
+
+mab <- mab$nabMab
+
+```
+
+Review how many unique viruses are found in each protocol assayed for
+each mAb.
+
+```{r review-selection-prot}
+
+vir <- unique(mab[,.(prot, mab_mix_name_std, clade, neutralization_tier, virus)])
+dcast(vir, mab_mix_name_std~prot, value.var = "virus", fun.aggregate = length)
+
+```
+
+View the names of the first 50 viruses.
+
+```{r review-selection-virus}
+
+head(sort(unique(mab$virus)), 50)
+
+```
+
+Review the specific clades, tiers, and dilutions found in the
+selection.
+
+```{r review-selection-clade-tier}
+
+dcast(vir, mab_mix_name_std~clade, value.var = "virus", fun.aggregate = length)
+dcast(vir, mab_mix_name_std~neutralization_tier, value.var = "virus", fun.aggregate = length)
+
+```
+
+```{r review-selection-concentration}
+
+dcast(mab, mab_mix_name_std~mab_concentration, value.var = "virus", fun.aggregate = length)
+
+```
+
+Subset dataset to only the viruses that are analyzed for all the selected mAbs.
+
+```{r select-virus-panel1}
+
+castTab <- dcast(mab, virus~mab_mix_name_std, value.var = "virus", fun.aggregate = length)
+binGrp  <- apply(castTab[,-1], 1, function(x) paste0(as.numeric(x != 0), collapse = ""))
+tabGrp  <- table(binGrp)
+
+tabGrp
+
+```
+
+We will a set of viruses with the most mAb/virus combinations.
+
+```{r select-virus-panel2}
+
+members <- data.table(tabGrp, members = sapply(strsplit(names(tabGrp), ""), function(x) sum(as.numeric(x))))
+members[,comboCnt:=members * N] 
+selGrp <- members[order(comboCnt, decreasing = T), binGrp][1]
+
+castTab <- castTab[binGrp == selGrp,]
+
+mab <- mab[virus %in% castTab$virus]
+
+```
+
+To include as much data as possible, we will set censored titer
+IC50 results (-Inf and +Inf) to the min and max concentrations
+associated with those values. -Inf values are set to the minimum
+concentration tested, and +Inf values are set to the maximum
+concentration tested. This will assure that there are no missing
+values when calculating magnitude.
+
+Where multiple protocols test the same virus mAb combination (see
+table above), the geometric mean of the titer IC50 results is
+calculated. This will yield one titer IC50 per mAb virus combination.
+
+```{r average-across-replicates}
+
+mab <- mab[, `:=`(
+    titer_curve_ic50_mod = 
+        ifelse(titer_curve_ic50 == -Inf, min_concentration,
+        ifelse(titer_curve_ic50 == Inf, max_concentration,
+               titer_curve_ic50))
+)]
+
+mab <- mab[, `:=`(
+  titer_curve_ic50_gmean = 10^mean(log10(titer_curve_ic50_mod))
+), by = c("mab_mix_label", "virus")]
+
+```
+
+Calculate `magnitude` is the titer IC50 concentration. `breadth` is
+the cumulative proportion of isolates having titer IC50 concentrations
+at or below the concentraion on the x axis.
+
+Plot magnitude as derived from IC50:
+
+```{r plot-mb-ic50}
+
+mb50 <- unique(mab[,.(mab_mix_label, titer_curve_ic50_gmean, virus)])
+mb50 <- mb50[, magnitude := titer_curve_ic50_gmean]
+mb50 <- mb50[, mag_order := as.numeric(factor(magnitude, ordered = T)), by = "mab_mix_label"]
+mb50 <- mb50[, breadth   := mag_order/max(mag_order), by = "mab_mix_label"]
+
+ggplot(mb50) +
+    geom_line(aes(magnitude, breadth, color = mab_mix_label)) +
+    theme_bw() +
+    scale_x_log10() +
+    ggtitle("Magnitude Breadth Curve using Titer IC50")
+
+```
+
+Calculate the 1st, 2nd, and 3rd quartiles of magnitude for each mAb.
+
+```{r get-quartiles}
+
+qdt50 <- mb50[,
+{
+    qvals = quantile(magnitude)[c(2,3,4)]
+    list(quart = qvals,
+         qname = as.numeric(substr(names(qvals), 1, 2)))
+}
+, by = "mab_mix_label"]
+
+qdt50Cast <- dcast(qdt50, mab_mix_label~qname, value.var = "quart")
+qdt50Cast
+
+```
+
+### What mAbs have the lowest magnitude's for their first, second, and third quartiles?
+
+```{r}
+
+minMagQuart <- lapply(qdt50Cast[, -1, with = F], function(x) list(min(x), qdt50Cast$mab_mix_label[x == min(x)]))
+minMagQuart
+
+```
+
+### Which virsues do not have an IC50 at or below our lowest 3rd quartile magnitude?
+
+```{r}
+
+qVal <- minMagQuart[["75"]][[1]]
+
+mbSel50 <- mb50[magnitude > qVal,]
+
+virNeut <- mbSel50[,.(virus, mab_mix_label, magnitude)]
+virNeut <- dcast(virNeut, virus~mab_mix_label, value.var = "magnitude")
+virNeut <- virNeut[apply(virNeut[, -1, with = F], 1, function(x) all(!is.na(x))), virus]
+virNeut
+
+```
+
+### What mAbs were tested against those viruses and showed lower IC50 results?
+
+Search DataSpace for those identified viruses. We can use column names
+from the `mabGrid` field to subset the mAb grid.
+
+Select mAbs from grid where the magnitude of titer IC50 geometric mean
+is less than the 3rd quartile magnitude of the previous mAb selection.
+
+```{r}
+
+con$resetMabGrid()
+
+con$filterMabGrid("virus", virNeut)
+
+gapMab <- con$mabGridSummary[!mab_mixture %in% unique(mab$mab_mix_label), mab_mixture]
+
+con$filterMabGrid("mab_mixture", gapMab)
+
+gapMab <- con$getMab()$nabMab
+
+gapMab <- gapMab[, `:=`(
+    titer_curve_ic50_mod = 
+        ifelse(titer_curve_ic50 == -Inf, min_concentration,
+        ifelse(titer_curve_ic50 == Inf, max_concentration,
+               titer_curve_ic50))
+)]
+
+gapMab <- gapMab[, titer_curve_ic50_gmean:=10^mean(log10(titer_curve_ic50_mod)), by = "mab_mix_label"]
+gapMab <- gapMab[titer_curve_ic50_gmean < qVal]
+
+```
+
+Show the titer IC50 values for those mAb and virus combinations.
+
+```{r}
+
+unique(gapMab[,.(mab_mix_label, titer_curve_ic50, virus)])
+
+```
+
+## Session information
+
+```{r session-info}
+
+sessionInfo()
+
+```

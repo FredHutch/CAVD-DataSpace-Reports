@@ -1,0 +1,179 @@
+---
+output: html_document_base
+---
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+
+```{r, echo=FALSE, include = FALSE} 
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.width = 14, 
+                      fig.height = 8, 
+                      fig.align="left")
+
+
+suppressWarnings({
+    library(dplyr)
+    library(ggplot2)
+    library(DataSpaceR)
+}) 
+
+options(stringsAsFactors = F)
+options(warn = -1)
+
+# Load Data
+con <- connectDS()
+study <- con$availableStudies
+
+# Get NAs excluded from graphs of "year"
+missingStudies <- sum(is.na(study$start_date))
+
+```
+
+```{r study_type}
+
+study_type_df <- study %>% 
+    select(study_name, type) %>% 
+    distinct %>% 
+    na.omit()
+
+study_type_n <- study_type_df %>% 
+    filter(type != 'Non-Clinical Immunogenicity') %>%
+    group_by(type) %>%  
+    summarise(n=n()) %>% 
+    arrange(desc(n))
+
+
+master_plot_1 <- ggplot(study_type_n, aes(x=  reorder(type, n), y=n, label = n)) +
+    geom_bar(width=.75, stat="identity",  fill="#fa2d5a", col="#fa4d5a",) +
+    coord_flip() +
+    ggtitle(expression(atop(, atop("2003-present")))) + 
+    ggtitle(bquote(atop(.("Total Number of Studies by Study Type"), atop(.("2003-present"), "")))) +
+    geom_text(aes(y = n, label = n, size = 12), hjust = -1.0,) + 
+    theme(
+        text = element_text(family="Georgia"),
+        ##plot.title= element_text(size=20),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_text(size=12), 
+        panel.background = element_blank(),
+        legend.position="none",
+        plot.title=element_text(size=20, "Georgia")
+    )+ 
+    geom_hline(aes(yintercept=0), colour="#a0a0a0") 
+
+```
+
+```{r start_year_facet}
+
+study_year_df <- study %>% 
+    select(study_name, type, start_date) %>% 
+    na.omit
+
+study_year_df$study_year <- study_year_df$start_date %>% substr(1,4)
+
+study_year_n <- study_year_df %>% 
+    filter(study_year != "") %>%
+    filter(type !="Non-Clinical Immunogenicity") %>%
+    select(study_name, type, study_year) %>%
+    group_by(type, study_year) %>% 
+    summarise(n=n()) %>% 
+    arrange(desc(n)) 
+study_year_n$study_year <- as.numeric(study_year_n$study_year)
+
+master_plot_2 <- ggplot(study_year_n, aes(x= study_year, y=n))+
+  facet_wrap(~type, ncol = 4) + 
+  scale_y_continuous( limits = c(0, 19), expand = c(0,0) )+
+  scale_x_continuous(limits = c(2000, 2020), breaks = c(2000, 2010, 2020), labels = c("2000", "2010", "2020"), expand = c(0.1, 0.1)) +
+  geom_bar(stat="identity", fill="#fa2d5a") + 
+  ggtitle("Number of Studies by Study Type and Start Year") + 
+  theme(
+    text = element_text(family="Georgia"),
+    axis.text.y = element_text(size=12),
+    axis.text.x = element_text(vjust = 2.5),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_line(colour = "#e1e1e1"),
+    panel.spacing.x = unit(15, "pt"),
+    panel.spacing.y = unit(15, "pt"),
+    ##plot.title = element_text(size=20),
+    plot.title=element_text(size=20, "Georgia")
+  )
+
+```
+
+```{r study_type_stacked_bar}
+
+## To change plot order of class varible
+## use factor() to change order of levels
+study_data <- study_year_df %>%
+    select(study_name, study_year, type) %>%
+    filter(study_year != "") %>%
+    filter(type !="Non-Clinical Immunogenicity") 
+
+# needs to be pulled from unique count of "study_year" and some earthy pallette
+cbPalette<-c("#828282", "#E69F00", "#56B4E9", "#009E73", "#F0E442",  "#0072B2", "#FFB091", "#D55E00", "#CC79A7", "#84A934")
+
+master_plot_3 <- ggplot(study_data, aes(study_year, fill=type)) +
+    geom_bar() +
+    theme(
+        text = element_text(family="Georgia"),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#e1e1e1"),
+        legend.title=element_blank(),
+        ##plot.title= element_text(size=20),
+        plot.title=element_text(size=20, "Georgia")
+    ) +
+    scale_fill_manual(values= cbPalette) +
+    ggtitle("Proportion of Study Types by Start Year")
+```
+
+# Introduction
+<br><br>
+DataSpace brings together studies from HIV vaccine research networks which use a range of innovative strategies in search of an effective HIV vaccine. This compiled body of work conducted across networks emphasizes past and present translational research efforts to bridge the gap between basic discovery, product development, and disease prevention. 
+<br><br>
+The research conducted in these networks involves a variety of different study types, including pre-clinical studies of non-human primates (NHP) and other animals (e.g. mice, rats, guinea pigs, and rabbits), antibody screening and production studies, and clinical trials. Studies can vary in size and scope, from testing the neutralization activity of a single monoclonal antibody (antibody screening), to evaluating the safety and immunogenicity of a vaccine candidate in a large-phase clinical trial. 
+<br><br>
+The figures below show the type and number of studies conducted in member networks since 2003.
+<br><br><br><br>
+
+
+```{r plot_1}
+master_plot_1
+```
+<br><br>
+*Figure 1. This graph shows the total number of studies in DataSpace by study type. The 2 most frequently conducted types of studies in member networks are pre-clinical studies using animals other than NHP and antibody screening studies. * 
+<br><br><br><br>
+
+
+<br><br>   
+```{r plot_2}
+master_plot_2
+```
+<br><br>
+*Figure 2. This graph shows the total number of studies in DataSpace by study type and the year the study started (i.e. was registered or opened to enrollment) `r if (missingStudies > 0) {paste0("(Note: ", missingStudies, " studies missing date information are excluded from this plot)")}`*
+<br><br><br><br>
+
+```{r plot_3}
+master_plot_3   
+```
+<br><br>
+*Figure 3. This graph shows the number of studies in DataSpace by study type and the year the study started (i.e. was registered or opened to enrollment). `r if (missingStudies > 0) {paste0("(Note: ", missingStudies, " studies missing date information are excluded from this plot)")}`*
+<br><br><br><br>

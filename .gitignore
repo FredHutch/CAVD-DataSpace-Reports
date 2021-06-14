@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+DataSpaceReports.Rproj
+.DS_Store
+test_resources/*

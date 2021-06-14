@@ -1,0 +1,44 @@
+/* Neutralization Curve CSS */
+
+div.labkey-knitr table {
+    /*border: none !important;*/
+    font-family: Arial, serif;
+    font-size: 12px;
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin-top:1em;
+    color:#666363;
+}
+.labkey-knitr thead {
+    color: #E4E4E4;
+    background: #303030;
+    padding: 0;
+    margin: 0;
+    vertical-align: middle;
+    height: 56px;
+    margin-bottom: 1em;
+}
+.labkey-knitr th, td {
+    /*padding: .5em 1em .5em 0;*/
+    vertical-align: top;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #ddd !important;
+    font-family: Arial, sans-serif !important;
+}
+.labkey-knitr th {
+    color:#A09C9C;
+    text-transform:uppercase;
+    font-weight:normal;
+    font-size:12px;
+    padding: 1em;
+}
+.labkey-knitr td {
+    padding: 1.5em 1em; 
+}
+.labkey-knitr tr th:first-child, tr td:first-child {
+    padding-left:0; 
+}
+.labkey-knitr tr:hover td {
+    background-color:#fff;
+}

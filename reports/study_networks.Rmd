@@ -1,0 +1,166 @@
+---
+output: html_document_base
+---
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+
+```{r, echo=FALSE, include = FALSE} 
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.width = 14, 
+                      fig.height = 8, 
+                      fig.align="left")
+
+suppressWarnings({
+    library(data.table)
+    library(ggplot2)
+    library(Rlabkey)
+    library(DataSpaceR)
+}) 
+
+options(stringsAsFactors = F)
+options(warn = -1)
+
+# Load Data
+labkey.data <- labkey.selectRows(
+    baseUrl="https://dataspace.cavd.org", 
+    folderPath="/CAVD", 
+    schemaName="CDS", 
+    queryName="study", 
+    viewName="", 
+    colFilter=NULL, 
+    containerFilter=NULL, 
+    colNameOpt="rname"
+)
+
+study <- setDT(labkey.data)
+
+study_networks <- study[, .(network, data_availability, type, start_date, strategy)]
+study_networks$start_year <- substr(study_networks$start_date, 1,4)
+study_networks$has_data <- !is.na(study_networks$data_availability)
+
+```
+
+```{r count_by_network}
+
+
+master_plot_1 <- ggplot(study_networks, aes(x = network)) +
+    geom_bar(aes(fill = has_data), width=.5, stat="count") +
+    ggtitle("Number of Studies by Network and Data Availability") +
+    scale_fill_manual(values = c("#939598", "#41c49f"), 
+                      labels = c("Data Not Yet Added",
+                                 "Assay Data in DataSpace")) +
+    theme(
+        text = element_text(family="Georgia"),
+        ##plot.title= element_text(size=20),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_text(size=12), 
+        legend.title = element_blank(),
+        panel.background = element_blank(),
+        plot.title=element_text(size=20, "Georgia"),
+        panel.grid.major.y = element_line(colour = "#e5e5e5")
+    )
+
+```
+
+```{r study_type}
+# Get correct order 
+type_order <- setorder(study_networks[, .N, .(type)], N)
+# cbPalette<-c("#828282", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+palette <- c("#56B4E9", "#F0E442", "#CC79A7" )
+
+master_plot_2 <- ggplot(study_networks, aes(x = type))+
+    geom_bar(aes(fill = network), stat="count") + 
+    ggtitle("Number of Studies by Study Type") + 
+    coord_flip() +
+    theme(
+        text = element_text(family="Georgia"),
+        ##plot.title = element_text(size=25),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_text(size=12), 
+        panel.background = element_blank(),
+        plot.title = element_text(size=25, family="Georgia")
+    )+ 
+    geom_hline(aes(yintercept=0), colour="#a0a0a0") +
+    scale_x_discrete(limits = type_order$type) +
+    scale_fill_manual(values = palette, name = "Network") + 
+    geom_text(aes(y = N, label = N, size = 12), data = type_order, hjust = -1.0, show.legend = FALSE)
+
+```
+
+```{r vaccine_strategy, eval = FALSE}
+# Get correct order 
+strategy_order <- setorder(study_networks[, .N, .(strategy)], N, na.last = TRUE)
+
+# Put na on bottom
+strategy_order <- strategy_order[-which(is.na(strategy))]
+
+
+
+palette <- c("#56B4E9", "#F0E442", "#CC79A7" )
+
+master_plot_3 <- ggplot(study_networks, aes(x = strategy))+
+    geom_bar(aes(fill = network), stat="count") + 
+    ggtitle("Number of Studies by Vaccine Strategy") + 
+    coord_flip() +
+    theme(
+        text = element_text(family="Georgia"),
+        ##plot.title = element_text(size=25),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_text(size=12), 
+        panel.background = element_blank(),
+        plot.title = element_text(size=25, family="Georgia")
+    )+ 
+    geom_hline(aes(yintercept=0), colour="#a0a0a0") +
+    scale_x_discrete(limits = c(NA, strategy_order$strategy)) +
+    scale_fill_manual(values = palette, name = "Network")+ 
+    geom_text(aes(y = N, label = N, size = 12), data = strategy_order, hjust = -1.0, show.legend = FALSE)
+```
+
+# Introduction
+<br><br>
+DataSpace brings together studies from HIV vaccine research networks which use a range of innovative strategies in search of an effective HIV vaccine. This compiled body of work conducted across networks emphasizes past and present translational research efforts to bridge the gap between basic discovery, product development, and disease prevention. 
+<br><br>
+DataSpace provides a rich catalog of study information for over 300 HIV vaccine research studies from 2 member networks: the Collaboration for AIDS Vaccine Discovery (CAVD) and the HIV Vaccine Trials Network (HVTN). DataSpace has pages in Learn for all CAVD and HVTN studies, as well as a few studies from the Military HIV Research Program (MHRP) involved in cross-network collaborations. 
+<br><br>
+Study pages describe the study, the products administered, the immunogenicity assays performed, and the study findings. Study pages also provide an inventory of the data collected during the trial and indicate whether the data is available to explore and download in DataSpace. Links to publications and other resources related to the study, such as study team contacts and links to clinicaltrials.gov, the Atlas portal, and the Los Alamos National Laboratory (LANL) antibody database, provide additional background for the study. 
+<br><br>
+New CAVD study pages are added when the study is registered with the network, and for HVTN studies, once a study is officially open to enrollment. Findings, publications, and other details are added to the study page once the study is complete.
+<br><br>
+The figures below explore how DataSpace studies are distributed between the different member networks.
+<br><br><br><br>
+
+
+```{r plot_1, fig.width = 8}
+master_plot_1
+```
+<br><br>
+*Figure 1. This graph shows the total number of studies by network and the proportion of studies with data available in DataSpace.* 
+<br><br><br><br>
+
+
+<br><br>   
+```{r plot_2}
+master_plot_2
+```
+<br><br>
+*Figure 2. This graph shows the total number of studies in DataSpace by study type. See the “Study Types Over Time” report for more details on study type.*
+<br><br><br><br>
+
+<br><br>
+```{r plot_3, eval = FALSE}
+master_plot_3
+```
+<br><br><br><br>

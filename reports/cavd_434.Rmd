@@ -1,0 +1,531 @@
+---
+output: html_document_base
+---
+
+```{r set-options, include=FALSE}
+
+knitr::opts_chunk$set(cache = TRUE,
+                      cache.path = paste0(labkey.file.root, 
+                                          "/cache/cvd434_report/",
+                                          labkey.user.email,
+                                          "/"),
+                      warning = FALSE,
+                      message = FALSE,
+                      highlight = TRUE,
+                      tidy = TRUE,
+                      fig.align = "center")
+
+```
+
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+
+# Introduction
+
+In this report, we reproduce some of the main results from the scientific article for CAVD 434 (AUP 567) published in the May 2017 issue of the Journal of Virology, [*Superiority in Rhesus Macaques of Targeting HIV-1 Env gp140 to CD40 versus LOX-1 in Combination with Replication-Competent NYVAC-KC for Induction of Env-Specific Antibody and T Cell Responses*](https://www.ncbi.nlm.nih.gov/pubmed/28202751).  
+
+This example report provides a brief tutorial for accessing and analyzing data in the DataSpace using the R package, `DataSpaceR`.
+
+# Study background
+
+[CAVD 434](https://dataspace.cavd.org/cds/CAVD/app.view #learn/learn/Study/cvd434?q=434) was a vaccine study in non-human primates (NHP) looking at dendritic cell (DC) targeting vaccines. Four vaccine regimens were considered, all with 2 NYVAC-KC primes followed by the following boost combinations (2 doses): αCD40 with and without NYVAC-KC; and αLOX-1 with and without co-adminstered NYVAC-KC. All boosts in the four groups were adminstered with poly ICLC adjuvant. A fifth vaccine group was also tested using an αCD40 boost alone without the poly ICLC adjuvant. Immunogenicity, as measured by balanced antibody and T cell responses, was observed in all vaccine groups. More details are available in the [article](https://www.ncbi.nlm.nih.gov/pubmed/28202751) and on the [CAVD 434 study page](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd434?q=434).
+
+# Reproducing the results
+
+## Study information available on DataSpace
+
+Before jumping into data, it is extremely useful to visit the [Learn About](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study) section of the DataSpace for more information on the study and data. The study can be found by clicking "Learn about" and searching for "434".  If you don't have the protocol numbers memorized, you can also easily search by other study information, such as product ("Lox-1" or "CD40") or study PI ("Pantaleo"). On the [CAVD 434 study page](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Study/cvd434?q=434) we can find information on the vaccine products, the [study schema](https://dataspace.cavd.org/_webdav/home/files/%40files/static/cvd434_treatment_schema.html), the animals used in the study, protocols and reports, and other assay data that will become available in the future.
+
+## Getting started - accessing the data with DataSpaceR
+
+Data can be accessed through the DataSpaceR API using the `DataSpaceR` package. The [`DataSpaceR` github page](https://github.com/FredHutch/DataSpaceR) has information on installing and using the package:
+
+```{r make-connection}
+
+library(DataSpaceR)
+con <- connectDS()
+con
+
+```
+                                                                            
+The `con` object is an open connection to DataSpace. You can access a specific study as follows:
+
+```{r}
+
+study <- con$getStudy("cvd434")
+
+```
+
+Then, you can look at the available study datasets by running the following code:
+
+```{r}
+
+study$availableDatasets
+
+```
+Here, we see that we have access to three assay datasets (BAMA, ICS, and NAb) and the a demographic dataset (Demographics).
+
+
+Lastly, we will load one additional R package that we will need to reproduce the figures. The `cowplot` package is a library of visualization tools.
+
+```{r load_cowplot, cache = FALSE}
+
+library(cowplot)
+
+```
+
+## The Demographics dataset
+
+Vaccine and demographic information for participants or animals in a study are stored in the Demographics file. The assay data does not contain these fields, so if we want to consider demographics (e.g., study group), we will need to merge the demographic information onto the relevant assay datasets as needed. We will demonstrate that for each assay in the upcoming sections.
+
+But first, let us load the `Demographics` dataset from the study object and check the available fields:
+
+```{r}
+
+cvd434_demo <- study$getDataset("Demographics")
+names(cvd434_demo)
+
+```
+
+As this was an NHP study, not all general demographic information is available or relevant to the analysis. Depending on our goals, different information will be useful. 
+
+Here, we will be reproducing several figures from the article. Each of the figures exhibits immunogenicity results by vaccine group, so we need to identify that field. There are several variables with varying levels of treatment information. The `study_arm` field is the treatment group/arm assigned to study subjects, indicating the visit schedule and specific product, doses, and routes to be administered during the study. The `study_arm_summary` field is a combination of the treatment arm and whether that arm represents a ‘vaccine’ or ‘placebo’.  The `study_product_combination` field indicates which products were administered to the treatment arm during the study. 
+
+```{r, eval = T}
+
+head(cvd434_demo[, c("ParticipantId", "study_arm", "study_arm_summary", "study_product_combination")])
+
+```
+
+From this, we could look at the sample size for group assignments by administered products. In this particular study, identical product combinations were given as different regimens, so it is important to be familiar with the [study schema](https://dataspace.cavd.org/_webdav/home/files/%40files/static/cvd434_treatment_schema.html).
+   
+## The Treatment Arm Dataset
+
+The treatment arm table contains some additional details such as the group descriptions. The dataset is loaded automatically when the study is created, so all we have to do to see the information is `names(study$treatmentArm)`. By doing this we can look at the available fields.
+
+```{r}
+
+names(study$treatmentArm)
+
+```
+
+Next we can merge the description fields from our treatment arm dataset (`study$treatmentArm`) into our demographics dataset (`cvd434_demo`).  The group labels in the demographic dataset are also factored to match the figures in the paper.
+
+```{r, tidy = FALSE}
+
+## Summarize
+demoPlus <- merge(cvd434_demo, study$treatmentArm, by.x = "study_arm", by.y = "arm_name")
+smryTbl <- aggregate(ParticipantId ~ description*study_arm, demoPlus, FUN="length")
+DT::datatable(smryTbl,
+              rownames = FALSE, 
+              options = list(columnDefs = list(list(className = 'dt-center', 
+                                                    targets = 0:1)),
+                             dom = "t")
+              )
+
+## Factoring the study_group to match the figures in the paper
+cvd434_demo$Final_Group = factor(cvd434_demo$study_group, 
+                                 levels = 1:5, 
+                                 labels = c('G1', 'G2', 'G3', 'G4', 'G5'))
+
+```
+
+### NAb
+
+We will begin with [Figure 4A](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5391468/figure/F4/), as it requires the least amount of data preparation. Figure 4A presents a line plot of TZM-bl neutralizing antibody assay (NAb) results by vaccination group.  Information on the assay can be found under ["Learn About > Assays"](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Assay/NAB). The NAb data can be loaded as follows:
+
+```{r load nab}
+
+cvd434_nab_in = study$getDataset("NAb")
+names(cvd434_nab_in)
+
+```
+
+Remember that the Demographic data was stored separately, so let us merge that onto the assay data. 
+
+```{r nab merge}                                                                                                                                                                                                                                                                                                                
+
+cvd434_nab = merge(cvd434_nab_in, cvd434_demo, by = "ParticipantId")
+
+```
+
+Now we have all the necessary information to reproduce Figure 4A, a plot of neutralization response against MW965.26:
+
+```{r Nab_figures, fig.cap ="Reproduction of Figure 4A. Neutralization titers against MW965.26 by vaccination group.", fig.align="left", cache=FALSE, tidy=FALSE}
+
+## Subsetting on MW965.26
+plot_data <- subset(cvd434_nab, antigen == 'MW965.26')
+
+ggplot(plot_data, aes(x = visit_day, y = titer_ID50))  +
+    geom_point(aes(col = response_call),
+               size = 2,
+               show.legend = FALSE) +
+    ## Adding Individual lines for each subject
+    geom_line(aes(group = ParticipantId),
+              size = 1,
+              alpha = .25) +
+    ## Adding Avg lines
+    stat_summary(fun.y = "mean",
+                 colour = "black",
+                 size = 1.25,
+                 geom = "line") +
+    facet_grid(Final_Group ~ .,
+               scales = "fixed") +
+    scale_color_hue(name = "",
+                    breaks = 0:1,
+                    labels = c('NR','R'),
+                    h.start = 180) +
+    scale_y_log10("\nNeutralizing Antibody Titer (ID50)",
+                  breaks = c(10,100,1000),
+                  labels = c("100", "100", "1000")) +
+    ## X Axis is days but label will be in Weeks
+    scale_x_continuous("Week",
+                       breaks = c(-4,14,26,32)*7,
+                       labels = paste0('Wk ',c(-4,14,26,32))) +
+    theme_bw() +
+    ## Some additional options to make the figure look nice
+    theme(
+        axis.text = element_text(size = 7),
+        strip.text = element_text(size = 8),
+        strip.background = element_rect(fill = 'white'),
+        plot.margin = unit(c(5,5,-10,-10), "points")
+    )
+
+```
+
+
+### ICS
+
+Next, we will work with the intracellular staining (ICS) flow cytometry data to reproduce [Figure 7](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5391468/figure/F7/) (CD4^+^ T cell response). Again, information and variable descriptions for this assay are available in [Learn About > ICS](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Assay/ICS).
+
+```{r load ics}
+
+cvd434_ics_in = study$getDataset("ICS")
+names(cvd434_ics_in)
+
+cvd434_ics = merge(cvd434_ics_in, cvd434_demo, by = "ParticipantId")
+
+```
+
+The plots in Figure 7 included the aggregated peptide pool data at the protein and protein panel levels.  
+
+```{r ics-work}
+
+## Subsetting on Protein or Protein Panel (Don't want individual Peptide Pools)
+plot_data <- subset(cvd434_ics,
+                    summary_level %in% c('Protein','Protein Panel') &
+                    antigen != 'Any Negative control' &
+                    visit_day %in% c(182,224) &
+                    functional_marker_name == 'IFNg or IL2 or TNFa' &
+                    cell_type == 'CD4+')
+
+## Coverting visit day to week
+plot_data$Week = factor(paste0('Week ', plot_data$visit_day / 7),
+                        levels = paste0('Week ', c(0,6,16,26,32)))
+
+## Recoding Antigen to match labels in the figure.
+plot_data$plot_antigen = factor(plot_data$antigen,
+                                levels = c('Any Antigen','Any ENV','Any POL',
+                                           'Any GAG','Any GAG/POL','Any NEF'),
+                                labels = c('Any Antigen','Any ENV','POL',
+                                           'GAG','GAG/POL','NEF'))
+
+##code for math notation in y-axis label
+yaxis_label = expression(paste("Background-Subtracted % Cytokine Secreting " ~ CD4 ^ {"+"} ~ "T cells"))
+
+```
+                                                                                                                                                                                                                                                                                                 
+```{r ics_figure, fig.cap="Reproduction of Figure 7. Specificity and magnitude of blood HIV-1 antigen-specific CD4+ T cell responses by vaccination group.", fig.align="left", cache=FALSE, tidy=FALSE}                                                                                                                                                                                                                                                                                             
+
+ggplot(plot_data,
+       aes(x = Final_Group,
+           y = pmax(pctpos_adj, .01),
+           col = factor(response_call))) +
+    ## Only want boxplots for responders
+    geom_boxplot(data = subset(plot_data, response_call == 1),
+                 outlier.colour = NA,
+                 show.legend = FALSE) +
+    geom_jitter(size = 1,
+                position = position_jitter(height = 0, width = .20),
+                show.legend = FALSE) +
+    facet_grid(Week~plot_antigen,
+               scales = "fixed") +
+    xlab("") +
+    scale_y_log10(yaxis_label,
+                  breaks = c(.01,.1,1,10,100,1000),
+                  labels = c(expression("" <= 0.01),"0.1", "1","10","100","1000")) +
+    theme_bw() +
+    theme(
+        axis.text = element_text(size = 7),
+        strip.text = element_text(size = 8),
+        strip.background = element_rect(fill = 'white'),
+        plot.title = element_text(hjust = 0.5),
+        plot.margin = unit(c(5,5,-10,0),"points")
+    )
+
+```
+                                                                                                                                                                                                                                                                                                 
+### BAMA
+Lastly, we will recreate [Figure 1](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5391468/figure/F1/) presenting IgG binding antibody results generated from the binding antibody multplex assay (BAMA). Information on the assay can be found under [Learn About > BAMA](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Assay/BAMA). Figure 1 requires additional data pre-processing as well as more complicated R code to generate the panel of plots for each antigen response.
+
+As before, we will load in the assay data and merge with the demographic data. We will also perform some additional data preparation.
+
+```{r bama data load}
+
+cvd434_bama_in = study$getDataset("BAMA")
+names(cvd434_bama_in)
+
+cvd434_bama = merge(cvd434_bama_in, cvd434_demo, by = "ParticipantId")
+
+## Antigen List and corresponding names For Figure 1
+antigen_list <- c('ZM96 gp140-Ctag',
+                  'Con S gp140 CFI',
+                  'C.con.env03 140 CF_avi',
+                  'B.con.env03 140 CF',
+                  'gp70_B.CaseA_V1_V2',
+                  'C.1086C_V1_V2 Tags',
+                  'AE.A244 V1V2 Tags/293F',
+                  'AE.A244 V2 tags 293F')
+
+antigen_names <- c('Clade C gp 140 (Vaccine Strain ZM96)',
+                   'Group M gp140 (Consensus)',
+                   'Clade C gp140 (Consensus)',
+                   'Clade B gp 140 (Consensus)',
+                   'Clade V1-V2 (gp70 B.CaseA V1V2)',
+                   'Clade C V1-V2 (C.1086 V1V2 Tags)',
+                   'Clade AE V1-V2 (AE.A244 V1V2 Tags)',
+                   'Clade AE V2 (AE.A244 V2 Tags)')
+
+## Subsetting on IgG, antigens, and no baseline visit
+plot_data <- subset(cvd434_bama,
+                    antigen %in% antigen_list & antibody_isotype == 'IgG' & visit_day != -28)
+
+## Recoding for fancy plotting variables
+plot_data$plot_antigens = factor(plot_data$antigen, 
+                                 levels = antigen_list, 
+                                 labels = antigen_names)
+plot_data$plot_response = factor(as.numeric(plot_data$response_call), 
+                                 levels = 0:1)
+## Coverting visit day to week
+plot_data$Week = factor(paste0('Week ', plot_data$visit_day / 7), 
+                        levels = paste0('Week ', c(6,14,26,32)))
+
+## Truncating data for plotting when AUC values are low
+plot_data$auc[plot_data$auc < 100] <- 100
+
+```
+
+To recreate Figure 1, some additional coding is required. Each individual antigen plot is generated using a loop and stored as a list. The list of plots is combined into a single plot using `plot_grid` from the `cowplot` package.
+
+```{r BAMA_figure_1, fig.width=9, fig.height=9, fig.cap="Reproduction of Figure 1. Antigen-specific binding antibody responses by vaccination group.", fig.align="left", cache=FALSE, tidy=FALSE}
+## The final plot is a series of panels by antigen
+## The following loop generates a list of individual plots 
+
+fig1_list <- list()
+for (i in 1:length(antigen_list)) {
+    
+    temp_plot_data <- plot_data[plot_data$antigen == antigen_list[i],]
+    
+    fig1_list[[i]] <- ggplot(temp_plot_data, 
+                             aes(x = Final_Group, 
+                                 y = auc, col = plot_response))  + 
+        ## Only want boxplots for responders
+        geom_boxplot(data = subset(temp_plot_data, response_call == 1), 
+                     outlier.colour = NA, 
+                     show.legend = FALSE) +
+        geom_jitter(size = 1, 
+                    position = position_jitter(height = 0, width = .20), 
+                    show.legend = FALSE) +
+        facet_grid(.~Week, 
+                   scales = "fixed") +
+        xlab("") + 
+        ggtitle(antigen_names[i]) +
+        scale_color_hue(name = "", 
+                        breaks = 0:1, 
+                        labels = c('NR','R'), 
+                        h.start = 180, 
+                        drop = F) +
+        scale_y_log10("\nAUC", 
+                      breaks = c(100,1000,10000,100000), 
+                      labels = c(expression("" <= 100), "1000", "10000", 
+                                 "100000")) +
+        theme_bw() + 
+        theme(
+            axis.text = element_text(size = 7), 
+            strip.text = element_text(size = 8), 
+            strip.background = element_rect(fill = 'white'), 
+            plot.title = element_text(hjust = 0.5, size = 12), 
+            plot.margin = unit(c(5,5,-10,-10),"points")
+        ) +
+        coord_cartesian(ylim = c(100,52000))
+}
+
+plot_grid(plotlist = fig1_list, ncol = 2, scale = 1, labels = LETTERS[1:8])
+
+```
+
+
+```{r nab mb, eval = F, include = F, fig.align="left"}
+
+## Figure 4 B Code ##
+
+## Subetting on A3R5 data at the subject level
+ind_data <- cvd434_nab[cvd434_nab$target_cell == 'A3R5',]
+
+##Creating Avg dataset for AUC-MB plot
+mb_data <- aggregate(titer_ID50 ~ ParticipantId + visit_day + study_group + response_call, data = ind_data, function(xx) {mean(log10(xx))})
+
+## Recoding for fancy plotting variables
+mb_data$Final_Group = factor(mb_data$study_group, 
+                             levels = 1:5, 
+                             labels = paste0('G ',1:5))
+mb_data$plot_response = factor(as.numeric(mb_data$response_call), 
+                               levels = 0:1)
+
+## Coverting visit day to week
+mb_data$Week = factor(paste0('Week ', mb_data$visit_day / 7), 
+                      levels = paste0('Week ', c(-4,14,26,32)))
+
+ggplot(mb_data, 
+       aes(x = Final_Group, 
+           y = titer_ID50)) +                                                                                                                                                                                                                                                                    theme_bw() +
+    geom_boxplot(outlier.colour = NA, 
+                 show.legend = FALSE) +
+    geom_jitter(size = 1, 
+                position = position_jitter(height = 0, width = .20), 
+                show.legend = FALSE) +
+    facet_grid(.~Week, 
+               scales = "fixed") +
+    xlab("") +
+    scale_color_hue(name = "", 
+                    breaks = 0:1, 
+                    labels = c('NR','R'), 
+                    h.start = 180) +
+    scale_y_continuous("\nAUC-MB", 
+                       breaks = c(1,1.25,1.5,1.75, 2), 
+                       labels = c(1,1.25,1.5,1.75, 2)) +
+    theme(axis.text = element_text(size = 7), 
+          strip.text = element_text(size = 8), 
+          axis.text.x = element_text(size = 7), 
+          strip.text.y = element_text(size = 8), 
+          legend.position = "bottom", 
+          legend.box = "horizontal", 
+          strip.background = element_rect(fill = 'white'), 
+          plot.title = element_text(hjust = 0.5), 
+          plot.margin = unit(c(5,5,-10,-10),"points"))
+
+```
+
+
+```{r figure 8 code, include = F, eval = F, fig.align="left"}
+
+## Figure 8 Code ##
+
+## Subsetting on Protein or Protein Panel (Don't want individual Peptide Pools)
+plot_data <- cvd434_ics[cvd434_ics$summary_level %in% c('Protein','Protein Panel') & cvd434_ics$antigen != 'Any Negative control' & cvd434_ics$visit_day %in% c(182,224) & cvd434_ics$functional_marker_name == 'IFNg or IL2 or TNFa' & cvd434_ics$cell_type == 'CD8+',]
+
+## Recoding for fancy plotting variables
+plot_data$Final_Group = factor(plot_data$study_group, 
+                               levels = 1:5, 
+                               labels = paste0('G',1:5))
+plot_data$plot_response = factor(as.numeric(plot_data$response_call), levels = 0:1)
+
+## Coverting visit day to week
+plot_data$Week = factor(paste0('Week ', plot_data$visit_day / 7), 
+                        levels = paste0('Week ', c(0,6,16,26,32)))
+
+## Recoding Antigen
+plot_data$plot_antigen = factor(plot_data$antigen, 
+                                levels = c('Any Antigen','Any ENV','Any POL','Any GAG','Any GAG/POL','Any NEF'), 
+                                labels = c('Any Antigen','Any ENV','POL','GAG','GAG/POL','NEF'))
+
+ggplot(plot_data, 
+       aes(x = Final_Group, 
+           y = pmax(pctpos_adj, .01), 
+           col = factor(plot_response))) +
+    ## Only want boxplots for responders
+    geom_boxplot(data = plot_data[plot_data$plot_response == 1,], 
+                 outlier.colour = NA, 
+                 show.legend = FALSE) +
+    geom_jitter(size = 1, 
+                position = position_jitter(height = 0, width = .20), 
+                show.legend = FALSE) +
+    facet_grid(Week~plot_antigen, 
+               scales = "fixed") +
+    xlab("") +
+    scale_y_log10(expression(paste("Background-Subtracted % Cytokine Secreting " ~ CD8 ^ {"+"} ~ "T cells")), 
+                  breaks = c(.01,.1,1,10,100,1000), 
+                  labels = c(expression("" <= 0.01),"0.1", "1","10","100","1000")) +
+    theme_bw() +
+    theme(axis.text = element_text(size = 7),
+          strip.text = element_text(size = 8),
+          axis.text.x = element_text(size = 7),
+          strip.text.y = element_text(size = 8),
+          legend.position = "bottom",
+          legend.box = "horizontal",
+          strip.background = element_rect(fill = 'white'),
+          plot.title = element_text(hjust = 0.5),
+          plot.margin = unit(c(5,5,-10,0),"points"))
+
+```
+ 
+ 
+```{r BAMA_figure_2, fig.width = 10, fig.height=10, eval = F, include = F, fig.align="left"}
+
+## Figure 2 Code ##
+
+## Antigen and corresponding name For Figure 2
+antigen_list <- c('ZM96 gp140-Ctag')
+antigen_names <- c('Clade C gp 140 (Vaccine Strain ZM96)')
+
+## Subsetting on IgA, ZM96 gp140-Ctag, and no baseline visit
+plot_data <- cvd434_bama[cvd434_bama$antigen %in% antigen_list & cvd434_bama$antibody_isotype == 'IgA' & cvd434_bama$visit_day != -28,]
+
+## Recoding for fancy plotting variables
+plot_data$Final_Group = factor(plot_data$study_group, 
+                               levels = 1:5, 
+                               labels = c('G1', 'G2', 'G3', 'G4', 'G5'))
+plot_data$plot_antigens = factor(plot_data$antigen, 
+                                 levels = antigen_list, 
+                                 labels = antigen_names)
+plot_data$plot_response = factor(as.numeric(plot_data$response_call), levels = 0:1)
+
+## Coverting visit day to week
+plot_data$Week = factor(paste0('Week ', plot_data$visit_day / 7), 
+                        levels = paste0('Week ', c(6,14,26,32)))
+
+##Truncating data for plotting (uninterested in exact values when < 100)
+plot_data$mfi_delta[plot_data$mfi_delta < 100] <- 100
+
+ggplot(plot_data, 
+       aes(x = Final_Group, 
+           y = mfi_delta, 
+           col = plot_response)) +                                                                                                                                                                                                                                                                               theme_bw() +
+    ## Only want boxplots for responders
+    geom_boxplot(data = plot_data[plot_data$response_call == 1,], 
+                 outlier.colour = NA, 
+                 show.legend = FALSE) +
+    geom_jitter(size = 1, 
+                position = position_jitter(height = 0, width = .20), 
+                show.legend = FALSE) +
+    facet_grid(.~Week, 
+               scales = "fixed") +
+    xlab("") +                                                                                                                                                                                                                                                                                ggtitle(antigen_names) +
+    scale_color_hue(name = "", 
+                    breaks = 0:1, 
+                    labels = c('NR','R'), 
+                    h.start = 180) +
+    scale_y_log10("\nMFI", 
+                  breaks = c(100,200,500,1000), 
+                  labels = c(expression("" <= 100), "200", "500", "1000")) +
+      theme(axis.text = element_text(size = 7), 
+            strip.text = element_text(size = 8), 
+            axis.text.x = element_text(size = 7), 
+            strip.text.y = element_text(size = 8), 
+            legend.position = "bottom", 
+            legend.box = "horizontal", 
+            strip.background = element_rect(fill = 'white'), 
+            plot.title = element_text(hjust = 0.5), 
+            plot.margin = unit(c(5,5,-10,-10),"points"))
+
+```
+<script>window.HTMLWidgets.staticRender();</script>

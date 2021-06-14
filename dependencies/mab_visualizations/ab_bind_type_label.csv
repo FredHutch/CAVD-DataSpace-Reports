@@ -1,0 +1,41 @@
+mab_ab_binding_type,mab_ab_binding_type_label
+"",""
+Combination,Combination
+C1C2,C1C2
+C-HR,C-HR
+C-term,C-term
+gp120,gp120
+gp120 C1,C1
+gp120 C1-C4,C1-C4
+gp120 C2,C2
+gp120 C5,C5
+"gp120 carbohydrates at glycosylation residues in C2, C3, C4, and V4, gp120 V3",C2-V4
+gp120 CD4BS,CD4BS
+gp120 CD4i,CD4i
+gp120 CD4i C1 region,CD4i C1 
+gp120 CD4i cluster A,CD4i cluA
+gp120 CD4i cluster B,CD4i cluB
+gp120 CD4i cluster C.1,CD4i cluC.1
+gp120 CD4i cluster C.2,CD4i cluC.2
+gp120 CD4i cluster C.3,CD4i cluC.3
+gp120 CD4i cluster C.4,CD4i cluC.4
+gp120 CD4i CoRBS (Cluster C),CD4i CoRBS-C
+gp120 V1-V2,V1V2
+gp120 V2,V2
+gp120 V2 (quaternary structure),V2 (Q)
+gp120 V2-CD4BS,V2-CD4BS
+gp120 V3,V3
+gp140,gp140
+gp160,gp160
+gp41,gp41
+gp41 CHR,gp41 CHR
+gp41 cluster I,gp41 cluI
+gp41 cluster II,gp41 cluII
+gp41 cluster II six-helix bundle,gp41 cluII 6
+gp41 five-helix bundle,gp41 5hel
+gp41 MPER,gp41 MPER
+gp41 NHR,gp41 NHR
+gp41-gp120 (quartenary interface),gp41-gp120 Q
+gp41-gp120 interface,gp41-gp120 I
+quaternary structure,quat
+V1V2,V1V2
