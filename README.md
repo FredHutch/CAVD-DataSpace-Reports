@@ -13,9 +13,9 @@ DataSpace reports are designed to show workflows, reproduce results from publica
 
 Rendered DataSpace reports can be found by:
 
-* logging into DataSpace, 
-* going to the Learn about section, 
-* then clicking on the Reports tab.
+* Log into DataSpace.
+* Go to the Learn about section.
+* Click on the Reports tab.
 
 ![](md_resources/report_page_in_cds.png)
 
