@@ -46,7 +46,7 @@ There were two pieces of information I learned from performing step 6.
 library(png)
 library(grid)
 library(ggplot2)
-img <- readPNG("/labkey/labkey/files/CAVD/@files/report_files/cavd259_durability.png")
+img <- readPNG("/labkey/labkey/files/CAVD/@files/CAVD-DataSpace-Reports/dependencies/cavd259_durability.png")
 grid.raster(img)
 
 ```
