@@ -55,7 +55,7 @@ For CAVD 259, those additional time points are useful for this analysis even tho
 
 # Results
 
-The final steps for the analysis involved loading the data in R and creating figures specific to the request ([See our case study report on CAVD 434](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A18) for a detailed explanation for how to use the DataSpaceR API). For BAMA, we focused on antigens where there were responses in at least 3 of the four studies following the final vaccination time point (Figure \ref{bama}). For all of these antigens, there is still detectable response at least 8 weeks out for either NYVAC product among vaccine responders. For ICS, we looked at durability of IFN$\gamma$, IL2, or TNF$\alpha$ secreting CD4+ T-cell responses and found generally durable responses through week 8 for both products among responders; however, there were generally less responders for this assay (Figure \ref{ICS}). Lastly, neutralizing antibody responses were less consistent (Figure \ref{nab}. For animals receiving NYVAC-C vaccine, there were generally lower overall response rates and they usually decayed. For animals receiving NYVAC-KC, there were more responses and they tended to be more durable in CAVD 434, particularly against MW965.26.
+The final steps for the analysis involved loading the data in R and creating figures specific to the request ([See our case study report on CAVD 434](https://dataspace.cavd.org/cds/CAVD/app.view#learn/learn/Report/db%3A18) for a detailed explanation for how to use the DataSpaceR API). For BAMA, we focused on antigens where there were responses in at least 3 of the four studies following the final vaccination time point (Figure \ref{bama}). For all of these antigens, there is still detectable response at least 8 weeks out for either NYVAC product among vaccine responders. For ICS, we looked at durability of IFNγ, IL2, or TNFɑ secreting CD4+ T-cell responses and found generally durable responses through week 8 for both products among responders; however, there were generally less responders for this assay (Figure \ref{ICS}). Lastly, neutralizing antibody responses were less consistent (Figure \ref{nab}. For animals receiving NYVAC-C vaccine, there were generally lower overall response rates and they usually decayed. For animals receiving NYVAC-KC, there were more responses and they tended to be more durable in CAVD 434, particularly against MW965.26.
 
 ```{r load data}
 
@@ -100,7 +100,7 @@ clean_data_fun = function(assay){
 
 ```
 
-```{r bama analysis, fig.width = 8.5, fig.cap="Spaghetti plots for area under the titration curve (AUTC) trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for tested antigens with detected responses in CAVD 259, 277, 281, and 434. \\label{bama}", tidy = FALSE}
+```{r bama analysis, fig.width = 8.5, fig.cap="Spaghetti plots for area under the titration curve (AUTC) trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for tested antigens with detected responses in CAVD 259, 277, 281, and 434. \\label{bama}"}
 
 nyvac_durability_bama_all = clean_data_fun("BAMA") %>% subset(antibody_isotype == "IgG")
 
@@ -117,7 +117,7 @@ nyvac_durability_bama_responders = nyvac_durability_bama_all %>%
 
 antigen_set = nyvac_durability_bama_responders %>% group_by(antigen) %>%
     summarize(total_studies = n_distinct(study_label)) %>%
-    filter(total_studies >= 3) %>% `$`(antigen)
+    filter(total_studies >= 3) %>% `$`(., antigen)
 
 ggplot(data = subset(nyvac_durability_bama_responders, antigen %in% antigen_set),
        aes(x = days_last_vacc/7, y = auc, color = study_label)) +
@@ -132,7 +132,7 @@ ggplot(data = subset(nyvac_durability_bama_responders, antigen %in% antigen_set)
 
 ```
 
-```{r ics analysis, fig.cap="Spaghetti plots for IFN$\\gamma$, IL2, or TNF$\\alpha$ secreting CD4+ T cell response trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for tested antigens with detected responses in CAVD 259, 281, and 434 (there was no available durability ICS data for CAVD 277). \\label{ICS}", tidy = FALSE}
+```{r ics analysis, fig.cap="Spaghetti plots for IFNɑ, IL2, or TNFγ, secreting CD4+ T cell response trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for tested antigens with detected responses in CAVD 259, 281, and 434 (there was no available durability ICS data for CAVD 277)"}
 
 nyvac_durability_ics_all = clean_data_fun("ICS") %>% subset(summary_level %in% c('Protein','Protein Panel') & 
                                                             antigen != 'Any Negative control' &
@@ -169,7 +169,7 @@ ggplot(data = subset(nyvac_durability_ics_responders, functional_marker_name == 
 ```
 
 
-```{r nab analysis, fig.cap = "Spaghetti plots for neutralization ID50 titer trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for MN.3, MW965.26, and TH023.6 viruses with detected responses in CAVD 259, 277, 281, and 434. Response titers below 20 are below the limit of detection. Responses against TH023.6 were not tested for NYVAC-C products. \\label{nab}", tidy = FALSE}
+```{r nab analysis, fig.cap = "Spaghetti plots for neutralization ID50 titer trajectories among responders at final immunization for vaccine regimens containing NYVAC-C or NYVAC-KC products for MN.3, MW965.26, and TH023.6 viruses with detected responses in CAVD 259, 277, 281, and 434. Response titers below 20 are below the limit of detection. Responses against TH023.6 were not tested for NYVAC-C products. \\label{nab}"}
 
 nyvac_durability_nab_all = clean_data_fun("NAb") %>% subset(target_cell == "TZM-bl") %>%
     mutate(
@@ -187,7 +187,7 @@ nyvac_durability_nab_responders = nyvac_durability_nab_all %>%
 
 isolate_set = nyvac_durability_nab_responders %>% group_by(antigen) %>%
     summarize(total_studies = n_distinct(study_label)) %>%
-    filter(total_studies >= 2) %>% `$`(antigen)
+    filter(total_studies >= 2) %>% `$`(., antigen)
 
 ggplot(data = subset(nyvac_durability_nab_responders, antigen %in% isolate_set),
        aes(x = days_last_vacc/7, y = titer_plot, color = study_label)) +
