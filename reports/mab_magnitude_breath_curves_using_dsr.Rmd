@@ -3,7 +3,7 @@ title: "DataSpace Report"
 output: "html_document"
 ---
 
-<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport_condensed.css">
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/learn_report_margins.css">
 
 ```{r set-options, include=FALSE}
 
@@ -34,7 +34,7 @@ For a more detailed explanation of DataSpaceR's mAb utilites, see the
 DataSpaceR vignettes.
 
 First, connect to DataSpace, then display the summary of the mAb grid
-via `mabGridSummary`. See other documentations associated with this
+via `mabGridSummary`. See other documentation associated with this
 package for setting up proper credentials for accesing data using
 DataSpaceR.
 
@@ -141,7 +141,7 @@ dcast(mab, mab_mix_name_std~mab_concentration, value.var = "virus", fun.aggregat
 
 ```
 
-Subset dataset to only the viruses that are analyzed for all the selected mAbs.
+View virus counts for different groups of mabs.
 
 ```{r select-virus-panel1}
 
@@ -153,7 +153,7 @@ tabGrp
 
 ```
 
-We will a set of viruses with the most mAb/virus combinations.
+We will analyze a set of viruses with the most mAb/virus combinations.
 
 ```{r select-virus-panel2}
 
@@ -164,6 +164,8 @@ selGrp <- members[order(comboCnt, decreasing = T), binGrp][1]
 castTab <- castTab[binGrp == selGrp,]
 
 mab <- mab[virus %in% castTab$virus]
+
+unique(mab[,.(mab_mix_name_std, virus)])[,.(virus_count = .N), by=mab_mix_name_std]
 
 ```
 
@@ -193,7 +195,7 @@ mab <- mab[, `:=`(
 
 ```
 
-Calculate `magnitude` is the titer IC50 concentration. `breadth` is
+`magnitude` is the titer IC50 concentration. `breadth` is
 the cumulative proportion of isolates having titer IC50 concentrations
 at or below the concentraion on the x axis.
 
@@ -210,7 +212,9 @@ ggplot(mb50) +
     geom_line(aes(magnitude, breadth, color = mab_mix_label)) +
     theme_bw() +
     scale_x_log10() +
-    ggtitle("Magnitude Breadth Curve using Titer IC50")
+    ggtitle("Magnitude Breadth Curve using Titer IC50") +
+    theme(legend.direction ="vertical")+
+    guides(color=guide_legend(ncol=2))
 
 ```
 
@@ -240,22 +244,20 @@ minMagQuart
 
 ```
 
-### Which virsues do not have an IC50 at or below our lowest 3rd quartile magnitude?
+### Which virsues are not neutralized at any IC50 at or below our lowest 3rd quartile magnitude for any mAb?
 
 ```{r}
 
 qVal <- minMagQuart[["75"]][[1]]
 
-mbSel50 <- mb50[magnitude > qVal,]
+mbSel50 <- mb50[, .(magnitude=min(magnitude)), by=virus][magnitude >= qVal,]
 
-virNeut <- mbSel50[,.(virus, mab_mix_label, magnitude)]
-virNeut <- dcast(virNeut, virus~mab_mix_label, value.var = "magnitude")
-virNeut <- virNeut[apply(virNeut[, -1, with = F], 1, function(x) all(!is.na(x))), virus]
+virNeut <- unique(mbSel50[,virus])
 virNeut
 
 ```
 
-### What mAbs were tested against those viruses and showed lower IC50 results?
+### What mAbs were tested against those viruses that showed lower IC50 results?
 
 Search DataSpace for those identified viruses. We can use column names
 from the `mabGrid` field to subset the mAb grid.

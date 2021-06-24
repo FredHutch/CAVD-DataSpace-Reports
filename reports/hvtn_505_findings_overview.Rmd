@@ -3,7 +3,7 @@ title: "HVTN 505 Analysis"
 output: "html_document"
 ---
 
-<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport_condensed.css">
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/learn_report_margins.css">
 
 ```{r set-options, include=FALSE}
 

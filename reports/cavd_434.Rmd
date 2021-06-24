@@ -17,7 +17,7 @@ knitr::opts_chunk$set(cache = TRUE,
 
 ```
 
-<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/learn_report_margins.css">
 
 # Introduction
 

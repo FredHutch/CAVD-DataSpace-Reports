@@ -13,12 +13,11 @@ knitr::opts_chunk$set(cache = TRUE,
                       message = FALSE,
                       highlight = TRUE,
                       tidy = TRUE,
-                      fig.align = "center",
-                      fig.width = 8)
+                      fig.align = "center")
 
 ```
 
-<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/RReport.css">
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/learn_report_margins.css">
 
 
 # Background
@@ -151,8 +150,9 @@ yaxis_label = expression(paste("Background-Subtracted % Cytokine Secreting " ~ C
 
 ## red: ##F8766D   l. green: ##7CAE00   blue: ##00BFC4   purple ##C77CFF
 
-ggplot(data = subset(nyvac_durability_ics_responders, functional_marker_name == 'IFNg or IL2 or TNFa' &
-                                                      antigen %in% c("Any ENV", "Any GAG")),
+ggplot(data = subset(nyvac_durability_ics_responders,
+                     functional_marker_name == 'IFNg or IL2 or TNFa' &
+                     antigen %in% c("Any ENV", "Any GAG")),
        aes(x = days_last_vacc/7, y = pmax(pctpos_adj, .01), color = study_label)) +
     geom_point() +
     scale_y_log10(yaxis_label,
