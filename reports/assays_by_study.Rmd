@@ -2,7 +2,7 @@
 output: html_document_base
 ---
 
-<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/learn_report_margins.css">
+<link rel="stylesheet" type="text/css" href="../../_webdav/CAVD/@files/CAVD-DataSpace-Reports/dependencies/css/learn_report_full.css">
 
 <script>
 $(document).ready(function(){
@@ -115,17 +115,17 @@ data <- merge(learnstudyassay, accessible, by.x = "prot", by.y = "studywithdata"
 
 # For now, is assay included in the study or not? 
 # eg grey fill if assay was done and green fill if data was added ("Data added to DataSpace")... then user can go to study page to get more details (maybe include link to study page?)
-grayx <- '<img src="/production/Connector/resources/images/learn/smallGreyX.png" class="transparent">'
-greencheck <- '<img src="/production/Connector/resources/images/learn/smallCheck.png" class="transparent">'
-graycheck <- '<img src="/production/Connector/resources/images/learn/grayCheck.png" class="transparent">'
+grayx <- '<img class="assay-check-status" src="/production/Connector/resources/images/learn/smallGreyX.png" class="transparent">'
+greencheck <- '<img class="assay-check-status" src="/production/Connector/resources/images/learn/smallCheck.png" class="transparent">'
+graycheck <- '<img class="assay-check-status" src="/production/Connector/resources/images/learn/grayCheck.png" class="transparent">'
 
 # Get data into correct format: one row per study, one column per assay
 invisible(data[, content := ifelse(has_data == TRUE,
-                                ifelse(accessible == TRUE, 
-                                       cell_spec(greencheck, tooltip = assay_status, escape = FALSE),
-                                       cell_spec(graycheck, tooltip = assay_status, escape = FALSE)),
-                                cell_spec(grayx, tooltip = assay_status, escape = FALSE)
-)])
+                            ifelse(accessible == TRUE, 
+                                   cell_spec(greencheck, tooltip = assay_status, escape = FALSE),
+                                   cell_spec(graycheck, tooltip = assay_status, escape = FALSE)),
+                            cell_spec(grayx, tooltip = assay_status, escape = FALSE)
+                            )])
 dat <- dcast(data, prot ~ assay_identifier, value.var = "content")
 dat <- apply(dat, 2, function(x){ifelse(is.na(x), "", x)})
 # dat <- apply(dat, 2, function(x){ifelse(x == " TRUE", greencheck, x)})
@@ -227,7 +227,6 @@ label %>%
 table <- xml_as_kable(k_xml)
 
 ```
-<br>
 
 # Introduction
 
@@ -237,14 +236,15 @@ The research conducted in these networks involves a range of humoral and cellula
 
 The chart below shows a compiled view of the assays performed across studies with a study page in the DataSpace, and provides a quick view of the data available.
 
-# Immunogeniciy Assay Data Available by Study
+# Immunogenicity Assay Data Available by Study
+
 ## Data Availability 
-<div style = "float: left;width: 100%;margin-bottom: 30px;>
+<div style = "float:left; width:100%; margin-bottom:30px;">
 <div class = "col">
 <img src="/production/Connector/resources/images/learn/smallCheck.png" class="transparent" style = "height: 25px; vertical-align:middle;"> 
 &nbsp;
 &nbsp;
-__Available__ 
+<span style="font-weight:bold">Available</span>
 
 Assay data for the study has been integrated with data from other studies and is available to explore in the DataSpace.
 </div>
@@ -253,7 +253,7 @@ Assay data for the study has been integrated with data from other studies and is
 <img src="/production/Connector/resources/images/learn/grayCheck.png" class="transparent" style = "height: 25px; vertical-align:middle;"> 
 &nbsp;
 &nbsp;
-__Restricted Access__ 
+<span style="font-weight:bold">Restricted Access</span>
 
 Assay data for the study has been integrated with data from other studies, however, access to data for this study is currently restricted.
 </div>
@@ -263,7 +263,7 @@ Assay data for the study has been integrated with data from other studies, howev
 <img src="/production/Connector/resources/images/learn/smallGreyX.png" class="transparent" style = "height: 25px; vertical-align:middle;"> 
 &nbsp;
 &nbsp;
-__Data not added__
+<span style="font-weight:bold">Data not added</span>
 
 Assay data is not yet integrated with data from other studies. Individual, non-integrated data files may be available to download for this assay .
 </div>
