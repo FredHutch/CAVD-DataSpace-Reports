@@ -33,6 +33,8 @@ with DataSpaceR's mAb utilities to create magnitude breadth curves.
 For a more detailed explanation of DataSpaceR's mAb utilites, see the
 DataSpaceR vignettes.
 
+## Accessing and exploring NAb mAb data with DataSpaceR
+
 First, connect to DataSpace, then display the summary of the mAb grid
 via `mabGridSummary`. See other documentation associated with this
 package for setting up proper credentials for accesing data using
@@ -153,7 +155,10 @@ tabGrp
 
 ```
 
-We will analyze a set of viruses with the most mAb/virus combinations.
+## Analyzing and visualizing NAb mAb data via magnitude breadth curves
+
+We will analyze a set of viruses with the most mAb/virus combinations 
+for the group of PGT combination and singleton mAbs queried above.
 
 ```{r select-virus-panel2}
 
