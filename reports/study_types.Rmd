@@ -146,7 +146,6 @@ master_plot_3 <- ggplot(study_data, aes(study_year, fill=type)) +
 ```
 
 # Introduction
-<br><br>
 DataSpace brings together studies from HIV vaccine research networks which use a range of innovative strategies in search of an effective HIV vaccine. This compiled body of work conducted across networks emphasizes past and present translational research efforts to bridge the gap between basic discovery, product development, and disease prevention. 
 <br><br>
 The research conducted in these networks involves a variety of different study types, including pre-clinical studies of non-human primates (NHP) and other animals (e.g. mice, rats, guinea pigs, and rabbits), antibody screening and production studies, and clinical trials. Studies can vary in size and scope, from testing the neutralization activity of a single monoclonal antibody (antibody screening), to evaluating the safety and immunogenicity of a vaccine candidate in a large-phase clinical trial. 

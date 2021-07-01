@@ -9,7 +9,7 @@ output:
 The intention of this report is to demonstrate how to reproduce
 research using integrated and non-integrated datasets from DataSpace.
 DataSpace has always provided integrated data to its users, that is,
-data that has been integrated into our standardized schema, but now
+data that has been integrated into our standardized schema, but 
 DataSpace also offers study-specific datasets and asssays to
 suppliment data that provided in the app in an integrated
 format.
@@ -71,14 +71,18 @@ library(DataSpaceR)
 library(Rlabkey)
 library(ggplot2)
 
-## reading integrated data with DataSpaceR
+# connect and review available datasets
 
 con <- connectDS()
 stu <- con$getStudy("vtn505")
+stu$availableDatasets
+
+## load integrated data with DataSpaceR
+
 bam <- copy(stu$getDataset("BAMA"))
 dem <- copy(stu$getDataset("Demographics"))
 
-## reading non-integrated data with DataSpaceR
+## load non-integrated data with DataSpaceR
 
 fca <- copy(stu$getDataset("Fc Array"))
 adc <- copy(stu$getDataset("ADCP"))
