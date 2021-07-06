@@ -4,12 +4,7 @@ output: html_document_base
 
 ```{r set-options, include=FALSE}
 
-knitr::opts_chunk$set(cache = TRUE,
-                      cache.path = paste0(labkey.file.root, 
-                                          "/cache/cvd434_report/",
-                                          labkey.user.email,
-                                          "/"),
-                      warning = FALSE,
+knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
                       highlight = TRUE,
                       tidy = TRUE,
@@ -93,7 +88,7 @@ Here, we will be reproducing several figures from the article. Each of the figur
 
 ```{r, eval = T}
 
-head(cvd434_demo[, c("ParticipantId", "study_arm", "study_arm_summary", "study_product_combination")])
+head(cvd434_demo[, c("participant_id", "study_arm", "study_arm_summary", "study_product_combination")])
 
 ```
 
@@ -115,7 +110,7 @@ Next we can merge the description fields from our treatment arm dataset (`study$
 
 ## Summarize
 demoPlus <- merge(cvd434_demo, study$treatmentArm, by.x = "study_arm", by.y = "arm_name")
-smryTbl <- aggregate(ParticipantId ~ description*study_arm, demoPlus, FUN="length")
+smryTbl <- aggregate(participant_id ~ description*study_arm, demoPlus, FUN="length")
 DT::datatable(smryTbl,
               rownames = FALSE, 
               options = list(columnDefs = list(list(className = 'dt-center', 
@@ -143,9 +138,9 @@ names(cvd434_nab_in)
 
 Remember that the Demographic data was stored separately, so let us merge that onto the assay data. 
 
-```{r nab merge}                                                                                                                                                                                                                                                                                                                
+```{r nab merge}
 
-cvd434_nab = merge(cvd434_nab_in, cvd434_demo, by = "ParticipantId")
+cvd434_nab = merge(cvd434_nab_in, cvd434_demo, by = "participant_id")
 
 ```
 
@@ -156,12 +151,12 @@ Now we have all the necessary information to reproduce Figure 4A, a plot of neut
 ## Subsetting on MW965.26
 plot_data <- subset(cvd434_nab, antigen == 'MW965.26')
 
-ggplot(plot_data, aes(x = visit_day, y = titer_ID50))  +
+ggplot(plot_data, aes(x = visit_day, y = titer_id50))  +
     geom_point(aes(col = response_call),
                size = 2,
                show.legend = FALSE) +
     ## Adding Individual lines for each subject
-    geom_line(aes(group = ParticipantId),
+    geom_line(aes(group = participant_id),
               size = 1,
               alpha = .25) +
     ## Adding Avg lines
@@ -203,7 +198,7 @@ Next, we will work with the intracellular staining (ICS) flow cytometry data to 
 cvd434_ics_in = study$getDataset("ICS")
 names(cvd434_ics_in)
 
-cvd434_ics = merge(cvd434_ics_in, cvd434_demo, by = "ParticipantId")
+cvd434_ics = merge(cvd434_ics_in, cvd434_demo, by = "participant_id")
 
 ```
 
@@ -275,7 +270,7 @@ As before, we will load in the assay data and merge with the demographic data. W
 cvd434_bama_in = study$getDataset("BAMA")
 names(cvd434_bama_in)
 
-cvd434_bama = merge(cvd434_bama_in, cvd434_demo, by = "ParticipantId")
+cvd434_bama = merge(cvd434_bama_in, cvd434_demo, by = "participant_id")
 
 ## Antigen List and corresponding names For Figure 1
 antigen_list <- c('ZM96 gp140-Ctag',
@@ -373,7 +368,7 @@ plot_grid(plotlist = fig1_list, ncol = 2, scale = 1, labels = LETTERS[1:8])
 ind_data <- cvd434_nab[cvd434_nab$target_cell == 'A3R5',]
 
 ##Creating Avg dataset for AUC-MB plot
-mb_data <- aggregate(titer_ID50 ~ ParticipantId + visit_day + study_group + response_call, data = ind_data, function(xx) {mean(log10(xx))})
+mb_data <- aggregate(titer_id50 ~ participant_id + visit_day + study_group + response_call, data = ind_data, function(xx) {mean(log10(xx))})
 
 ## Recoding for fancy plotting variables
 mb_data$Final_Group = factor(mb_data$study_group, 
@@ -388,7 +383,7 @@ mb_data$Week = factor(paste0('Week ', mb_data$visit_day / 7),
 
 ggplot(mb_data, 
        aes(x = Final_Group, 
-           y = titer_ID50)) +                                                                                                                                                                                                                                                                    theme_bw() +
+           y = titer_id50)) +                                                                                                                                                                                                                                                                    theme_bw() +
     geom_boxplot(outlier.colour = NA, 
                  show.legend = FALSE) +
     geom_jitter(size = 1, 

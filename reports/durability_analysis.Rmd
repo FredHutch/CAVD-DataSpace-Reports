@@ -4,12 +4,7 @@ output: html_document_base
 
 ```{r set-options, include=FALSE}
 
-knitr::opts_chunk$set(cache = TRUE,
-                      cache.path = paste0(labkey.file.root, 
-                                          "/cache/nyvac_report/",
-                                          labkey.user.email,
-                                          "/"),
-                      warning = FALSE,
+knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
                       highlight = TRUE,
                       tidy = TRUE,
@@ -83,7 +78,7 @@ clean_headers = function(names_in){
 clean_data_fun = function(assay){
     
     data_raw = nyvac_data_connect$getDataset(assay) %>% 
-        left_join(nyvac_data_demo, by = c("SubjectId")) %>%
+        left_join(nyvac_data_demo, by = c("subject_id")) %>%
         filter(!(study_label == "CAVD 259" & visit_day == 357)) ## a boost time point with no durability
     
     ## clean headers
@@ -105,7 +100,7 @@ nyvac_durability_bama_all = clean_data_fun("BAMA") %>% subset(antibody_isotype =
 
 ## create BAMA durability data, picking two antigens
 nyvac_durability_bama_responders = nyvac_durability_bama_all %>%
-    group_by(antigen, subjectid) %>%
+    group_by(antigen, subject_id) %>%
     mutate(
         total_measurements = n_distinct(days_last_vacc),
         peak_responder = response_call[which.min(days_last_vacc)]
@@ -125,7 +120,7 @@ ggplot(data = subset(nyvac_durability_bama_responders, antigen %in% antigen_set)
     facet_grid(nyvac_label~antigen) +
     scale_x_continuous("Study week after last vaccination") +
     scale_color_discrete("Study")+
-    geom_line(aes(group = subjectid)) +
+    geom_line(aes(group = subject_id)) +
     theme_bw() +
     theme(legend.position = "top")
 
@@ -138,7 +133,7 @@ nyvac_durability_ics_all = clean_data_fun("ICS") %>% subset(summary_level %in% c
                                                             cell_type == "CD4+")
 
 nyvac_durability_ics_responders = nyvac_durability_ics_all %>%
-    group_by(antigen, subjectid) %>%
+    group_by(antigen, subject_id) %>%
     mutate(
         total_measurements = n_distinct(days_last_vacc),
         peak_responder = response_call[which.min(days_last_vacc)]
@@ -161,7 +156,7 @@ ggplot(data = subset(nyvac_durability_ics_responders,
     facet_grid(nyvac_label~antigen) +
     scale_x_continuous("Study week after last vaccination") +
     scale_color_manual("Study", values = c("#F8766D", "#00BFC4", "#C77CFF"))+ # for common colors
-    geom_line(aes(group = subjectid)) +
+    geom_line(aes(group = subject_id)) +
     theme_bw() +
     theme(legend.position = "top") 
 
@@ -177,7 +172,7 @@ nyvac_durability_nab_all = clean_data_fun("NAb") %>% subset(target_cell == "TZM-
     )
 
 nyvac_durability_nab_responders = nyvac_durability_nab_all %>%
-    group_by(antigen, subjectid) %>%
+    group_by(antigen, subject_id) %>%
     mutate(
         total_measurements = n_distinct(days_last_vacc),
         peak_responder = response_call[which.min(days_last_vacc)]
@@ -198,7 +193,7 @@ ggplot(data = subset(nyvac_durability_nab_responders, antigen %in% isolate_set),
     facet_grid(nyvac_label~antigen) +
     scale_x_continuous("Study week after last vaccination") +
     scale_color_discrete("Study")+
-    geom_line(aes(group = subjectid)) +
+    geom_line(aes(group = subject_id)) +
     theme_bw() +
     theme(legend.position = "top") 
 
