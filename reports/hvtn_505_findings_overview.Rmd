@@ -66,9 +66,9 @@ bam505 <- vtn505$getDataset("BAMA")
 dem505 <- vtn505$getDataset("Demographics")
 
 ## set names
-setnames(ics505, "ParticipantId", "pub_id")
-setnames(bam505, "ParticipantId", "pub_id")
-setnames(dem505, "ParticipantId", "pub_id")
+setnames(ics505, "participant_id", "pub_id")
+setnames(bam505, "participant_id", "pub_id")
+setnames(dem505, "participant_id", "pub_id")
 
 ## pivot results for bama and ics
 icsPfs <- ics505[, pivotVal:=paste(gsub("\\+",  "", cell_type),
