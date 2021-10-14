@@ -290,7 +290,7 @@
         let tscl = mrFunc.hmLogScale(tmin, tmax);
         let cpal = mrFunc.colorRampPalette(kcol);
         let kcol_log = [...Array(tscl.values.length    )].map((_, i) => cpal((i) / (tscl.values.length - 1)));
-        let kcol_bin = [...Array(tscl.values.length - 1)].map((_, i) => cpal((i) / (tscl.values.length - 2)));        
+        let kcol_bin = [...Array(tscl.values.length - 1)].map((_, i) => cpal(tscl.values.length <= 2 ? 1 : (i) / (tscl.values.length - 2)));
         tscl.colScale = {};
         tscl.colScale.log = d3.scale.log().domain(tscl.values).range( kcol_log );
         tscl.colScale.bin = d3.scale.threshold()
@@ -306,7 +306,7 @@
         let tscl = mrFunc.hmLogScale(tmin, tmax);
         let cpal = mrFunc.colorRampPalette(ocol);
         let ocol_log = [...Array(tscl.values.length    )].map((_, i) => cpal((i) / (tscl.values.length - 1)));
-        let ocol_bin = [...Array(tscl.values.length - 1)].map((_, i) => cpal((i) / (tscl.values.length - 2)));
+        let ocol_bin = [...Array(tscl.values.length - 1)].map((_, i) => cpal(tscl.values.length <= 2 ? 1 : (i) / (tscl.values.length - 2)));
         tscl.colScale = {};
         tscl.colScale.log = d3.scale.log().domain(tscl.values).range( ocol_log );
         tscl.colScale.bin = d3.scale.threshold()
