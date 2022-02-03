@@ -69,8 +69,6 @@ max-width: 100%;
 
 ```{r, echo = FALSE}
 
-excludedAssays <- c("DEM SUPP")
-
 suppressPackageStartupMessages({
   library(DataSpaceR)
   library(Rlabkey)
@@ -78,6 +76,30 @@ suppressPackageStartupMessages({
   library(kableExtra)
   library(xml2)
 })
+
+excludedAssays <- c("DEM SUPP")
+
+niData <- setDT(
+  merge(
+    labkey.selectRows(
+      baseUrl = labkey.url.base,
+      folderPath = "/CAVD",
+      schemaName = "CDS",
+      queryName = "document",
+      colNameOpt = "fieldname",
+      colSelect = c("document_id", "label", "filename", "document_type", "assay_identifier")
+    ),
+    labkey.selectRows(
+      baseUrl = labkey.url.base,
+      folderPath = "/CAVD",
+      schemaName = "CDS",
+      queryName = "studydocument",
+      colNameOpt = "fieldname",
+      colSelect = c("document_id", "prot")
+    ),
+    by = "document_id"
+  )
+)[document_type == "Non-Integrated Assay" & !(assay_identifier %in% excludedAssays),]
 
 learnstudyassay <- setDT(labkey.selectRows(
   baseUrl=labkey.url.base,
@@ -90,7 +112,12 @@ learnstudyassay <- setDT(labkey.selectRows(
   containerFilter=NULL,
   colNameOpt="rname"
 ))
+
 learnstudyassay <- learnstudyassay[!assay_identifier %in% excludedAssays]
+learnstudyassay[
+  paste(prot, assay_identifier) %in% paste(niData$prot, niData$assay_identifier),
+  has_data:=TRUE
+]
 
 accessible <- setDT(labkey.selectRows(
   baseUrl=labkey.url.base,
