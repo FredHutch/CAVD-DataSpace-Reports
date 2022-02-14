@@ -92,7 +92,7 @@ dem <- dem[,`:=`(
     trt = vapply(study_arm, function(x) switch(x, "C1" = 0, "T1" = 1), c(1))
     )];
 
-dem <- merge(dem, dms[, .(ParticipantId, bhvrisk, HIVwk28, cc_cohort, cc_strata)], by = "ParticipantId");
+dem <- merge(dem, dms[, .(participant_id, bhvrisk, HIVwk28, cc_cohort, cc_strata)], by = "participant_id");
 setnames(dem, c("age_enrollment", "bmi_enrollment"), c("age", "bmi"))
 
 ## Antigen name mapping coming soon to DataSpace. This mapping was
@@ -135,8 +135,8 @@ fcaResp <- copy(fca)
 
 fcaResp <- fcaResp[, antigen:=vapply(antigen, antigenNameMapping, c("a"))]
 
-fcaResp <- dem[,.(ParticipantId, trt)
-               ][fcaResp, on = "ParticipantId"]
+fcaResp <- dem[,.(participant_id, trt)
+               ][fcaResp, on = "participant_id"]
 
 fcaResp[study_day == 196 & antibody_isotype == "FcgRIIa H131" & antigen == "Con S gp140 CFI" & trt == 1,
     round(sum(fca_response)/length(fca_response), 3)
@@ -177,11 +177,11 @@ dem <- dem[,`:=`(
 ## process data: log transform fca, subset to day 196 and RIIa, cast on antigen
 
 fca <- fca[, lfi:=log(1+pmax(0, mfi_delta))]
-fcc <- dcast(fca[antibody_isotype == "FcgRIIa H131" & study_day == 196,], ParticipantId~antigen, value.var="lfi")
+fcc <- dcast(fca[antibody_isotype == "FcgRIIa H131" & study_day == 196,], participant_id~antigen, value.var="lfi")
 setnames(fcc, names(fcc)[-1], paste0("R2a.", names(fcc)[-1]))
 
-dat <- adc[study_day == 196, .(ParticipantId, avg_phagocytosis_score)
-           ][fcc, on = "ParticipantId"]
+dat <- adc[study_day == 196, .(participant_id, avg_phagocytosis_score)
+           ][fcc, on = "participant_id"]
 setnames(dat, "avg_phagocytosis_score", "ADCP")
 setnames(dat, names(dat), make.names(names(dat)))
 
@@ -275,7 +275,7 @@ bam <- bam[, lfi:=log(1+pmax(0, mfi_delta))]
 
 bam <- dcast(
     bam[antibody_isotype == "IgG3" & visit_day == 196,],
-    ParticipantId~antigen,
+    participant_id~antigen,
     value.var = "lfi"
 )
 
@@ -293,7 +293,7 @@ dem <- dem[,`:=`(
     nn1 = sum(HIVwk28 == 1)
 ), by = stratum_num]
 
-bam <- dem[,.(ParticipantId, stratum_num, trt, HIVwk28,  age, race, bhvrisk, bmi, nn0, nn1)
+bam <- dem[,.(participant_id, stratum_num, trt, HIVwk28,  age, race, bhvrisk, bmi, nn0, nn1)
            ][bam
              ][trt == 1]
 
@@ -344,7 +344,7 @@ ggplot(bam[!is.na(mfi_delta)], aes(antigen, mfi_delta)) +
 bam <- copy(stu$getDataset("BAMA"))
 bam <- bam[, antigen:=sapply(make.names(antigen), antigenNameMapping)]
 
-bam <- dem[,.(ParticipantId, stratum_num, trt, HIVwk28,  age, race, bhvrisk, bmi, nn0, nn1)
+bam <- dem[,.(participant_id, stratum_num, trt, HIVwk28,  age, race, bhvrisk, bmi, nn0, nn1)
            ][bam[visit_day == 196]
              ][trt == 1 & antibody_isotype == "IgG3"
                ][order(antigen)]
